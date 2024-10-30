@@ -47,3 +47,15 @@ def test_next_fails_on_last_file(mgr, testdir):
     mgr.load_file(testdir.join("test3.jpg"))
     assert mgr.next() == False
     assert mgr.current_file() == testdir.join("test3.jpg")
+
+
+def test_prev(mgr, testdir):
+    mgr.load_file(testdir.join("test2.jpg"))
+    assert mgr.prev()
+    assert mgr.current_file() == testdir.join("test1.jpg")
+
+
+def test_prev_fails_on_first_file(mgr, testdir):
+    mgr.load_file(testdir.join("test1.jpg"))
+    assert mgr.prev() == False
+    assert mgr.current_file() == testdir.join("test1.jpg")
