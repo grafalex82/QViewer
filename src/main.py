@@ -65,12 +65,12 @@ class ImageLoaderApp(QMainWindow):
         view_menu.addAction(next_action)
 
         prev_dir_action = QAction("Previous Directory", self)
-        prev_dir_action.setShortcut("Ctrl-Left")
+        prev_dir_action.setShortcut("Ctrl+Left")
         prev_dir_action.triggered.connect(self.prev_dir)
         view_menu.addAction(prev_dir_action)
 
         next_dir_action = QAction("Next Directory", self)
-        next_dir_action.setShortcut("Ctrl-Right")
+        next_dir_action.setShortcut("Ctrl+Right")
         next_dir_action.triggered.connect(self.next_dir)
         view_menu.addAction(next_dir_action)
 
