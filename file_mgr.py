@@ -31,22 +31,30 @@ class FileMgr:
             self.reset_current_dir()
             return
 
-        for entry in os.listdir(directory):
-            full_path = os.path.join(directory, entry)
-            if os.path.isdir(full_path):
-                self.directory_subdirs.append(entry)
-                print(f"Directory: {entry}")
-            else:
-                self.directory_files.append(entry)
-                print(f"File: {entry}")
-        
+        self.directory_files, self.directory_subdirs = self.list_dir(directory)
         self.directory = directory
-        self.directory_files.sort()
-        self.directory_subdirs.sort()
         self.file_index = 0 if len(self.directory_files) else None
         print(f"Setting current directory to {self.directory}")
         print(f"Files: {self.directory_files}")
         print(f"Directories: {self.directory_subdirs}")
+
+
+    def list_dir(self, directory):
+        print(f"List dir: {directory}")
+        files = []
+        subdirs = []
+        for entry in os.listdir(directory):
+            full_path = os.path.join(directory, entry)
+            if os.path.isdir(full_path):
+                subdirs.append(entry)
+                print(f"Directory: {entry}")
+            else:
+                files.append(entry)
+                print(f"File: {entry}")
+
+        files.sort()
+        subdirs.sort()
+        return files, subdirs
 
             
     def current_file(self):
@@ -54,6 +62,10 @@ class FileMgr:
             fname = self.directory_files[self.file_index]
             return os.path.join(self.directory, fname)
         return None
+
+
+    def current_directory(self):
+        return self.directory
 
 
     def prev(self, allow_prev_dir = False):
@@ -93,3 +105,16 @@ class FileMgr:
         self.file_index = len(self.directory_files) - 1
         return True
 
+    def next_dir(self):
+        parent, dirname = os.path.split(self.directory)
+        print(f"dirname={dirname}")
+        print(f"parent={parent}")
+        files, subdirs = self.list_dir(parent)
+        index = subdirs.index(dirname)
+
+        if index < len(subdirs) - 1:
+            index += 1
+            self.load_directory(os.path.join(parent, subdirs[index]))
+            return True
+
+        return False

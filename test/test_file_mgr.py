@@ -30,11 +30,13 @@ def test_load_file(mgr, testdir):
     fname = str(testdir.join("test1.jpg"))
     mgr.load_file(fname)
     assert fname == mgr.current_file()
+    assert mgr.current_directory() == testdir
 
 
 def test_load_directory(mgr, testdir):
     mgr.load_directory(testdir)
     assert mgr.current_file() == testdir.join("test1.jpg")
+    assert mgr.current_directory() == testdir
 
 
 def test_empty_directory(mgr, testdir):
@@ -107,4 +109,18 @@ def test_last_fails_on_empty_dir(mgr, testdir):
     assert mgr.last() == False
     assert mgr.current_file() == None
 
+
+def test_next_dir(mgr, testdir):
+    mgr.load_directory(testdir.join("Sub1"))
+    assert mgr.next_dir() == True
+    assert mgr.current_directory() == testdir.join("Sub2Empty")
+    assert mgr.current_file() == None
+
+
+def test_next_dir2(mgr, testdir):
+    print(testdir.join("Sub2Empty"))
+    mgr.load_directory(testdir.join("Sub2Empty"))
+    assert mgr.next_dir() == True
+    assert mgr.current_directory() == testdir.join("Sub3")
+    assert mgr.current_file() == testdir.join("Sub3").join("test7.jpg")
 
