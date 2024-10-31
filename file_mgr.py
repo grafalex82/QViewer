@@ -57,7 +57,10 @@ class FileMgr:
 
 
     def prev(self, allow_prev_dir = False):
-        if self.file_index > 0 and not allow_prev_dir:
+        if self.file_index == None:
+            return
+        
+        if self.file_index > 0:
             self.file_index -= 1
             return True
 
@@ -65,10 +68,26 @@ class FileMgr:
 
 
     def next(self, allow_next_dir = False):
-        if self.file_index < len(self.directory_files) - 1 and not allow_next_dir:
+        if self.file_index == None:
+            return
+
+        if self.file_index < len(self.directory_files) - 1:
             self.file_index += 1
             return True
 
         return False
     
+
+    def first(self):
+        if self.file_index == None:
+            return
+
+        self.file_index = 0
+    
+
+    def last(self):
+        if self.file_index == None:
+            return
+
+        self.file_index = len(self.directory_files) - 1
 
