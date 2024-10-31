@@ -118,3 +118,18 @@ class FileMgr:
             return True
 
         return False
+
+
+    def prev_dir(self):
+        parent, dirname = os.path.split(self.directory)
+        print(f"dirname={dirname}")
+        print(f"parent={parent}")
+        files, subdirs = self.list_dir(parent)
+        index = subdirs.index(dirname)
+
+        if index > 0:
+            index -= 1
+            self.load_directory(os.path.join(parent, subdirs[index]))
+            return True
+
+        return False

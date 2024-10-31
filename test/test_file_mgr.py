@@ -124,3 +124,18 @@ def test_next_dir2(mgr, testdir):
     assert mgr.current_directory() == testdir.join("Sub3")
     assert mgr.current_file() == testdir.join("Sub3").join("test7.jpg")
 
+
+def test_prev_dir(mgr, testdir):
+    mgr.load_directory(testdir.join("Sub3"))
+    assert mgr.prev_dir() == True
+    assert mgr.current_directory() == testdir.join("Sub2Empty")
+    assert mgr.current_file() == None
+
+
+def test_prev_dir2(mgr, testdir):
+    print(testdir.join("Sub2Empty"))
+    mgr.load_directory(testdir.join("Sub2Empty"))
+    assert mgr.prev_dir() == True
+    assert mgr.current_directory() == testdir.join("Sub1")
+    assert mgr.current_file() == testdir.join("Sub1").join("test4.jpg")
+
