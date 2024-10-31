@@ -1,4 +1,5 @@
 import sys
+import os
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -95,6 +96,9 @@ class ImageLoaderApp(QMainWindow):
 
         self.label.setPixmap(pixmap)
         self.label.setAlignment(Qt.AlignCenter)
+
+        file_name = os.path.basename(image_path)
+        self.setWindowTitle(file_name)
 
 
     def prev_image(self):
