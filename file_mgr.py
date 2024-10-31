@@ -43,7 +43,7 @@ class FileMgr:
         self.directory = directory
         self.directory_files.sort()
         self.directory_subdirs.sort()
-        self.file_index = 0
+        self.file_index = 0 if len(self.directory_files) else None
         print(f"Setting current directory to {self.directory}")
         print(f"Files: {self.directory_files}")
         print(f"Directories: {self.directory_subdirs}")
@@ -58,7 +58,7 @@ class FileMgr:
 
     def prev(self, allow_prev_dir = False):
         if self.file_index == None:
-            return
+            return False
         
         if self.file_index > 0:
             self.file_index -= 1
@@ -69,7 +69,7 @@ class FileMgr:
 
     def next(self, allow_next_dir = False):
         if self.file_index == None:
-            return
+            return False
 
         if self.file_index < len(self.directory_files) - 1:
             self.file_index += 1
@@ -80,14 +80,16 @@ class FileMgr:
 
     def first(self):
         if self.file_index == None:
-            return
+            return False
 
         self.file_index = 0
+        return True
     
 
     def last(self):
         if self.file_index == None:
-            return
+            return False
 
         self.file_index = len(self.directory_files) - 1
+        return True
 
