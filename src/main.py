@@ -15,7 +15,7 @@ class ImageLoaderApp(QMainWindow):
 
         self.mgr = FileMgr()
         if image_path:
-            self.load_image(image_path)
+            self.prepare_for_file(image_path)
 
 
     def init_ui(self):
@@ -23,12 +23,14 @@ class ImageLoaderApp(QMainWindow):
 
         self.label = QLabel()
         self.label.setStyleSheet("background-color: black")
+        self.label.setAlignment(Qt.AlignCenter)
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(self.label)
         self.setCentralWidget(self.scroll_area)
 
         self.resize(800, 600)
+        self.setMinimumSize(640, 480)
 
 
     def create_menu(self):
@@ -79,46 +81,56 @@ class ImageLoaderApp(QMainWindow):
         # Open a file dialog to select an image
         file_path, _ = QFileDialog.getOpenFileName(self, "Open Image File", "", "Images (*.png *.jpg *.jpeg)")
         if file_path:
-            self.load_image(file_path)
+            self.prepare_for_file(file_path)
+
+
+    def prepare_for_file(self, image_path):
+        self.mgr.load_file(image_path)
+        self.load_image(self.mgr.current_file())
 
 
     def load_image(self, image_path):
-        self.mgr.load_file(image_path)
-        self.display_image(image_path)
+        file_name = os.path.basename(image_path)
+        self.setWindowTitle(file_name)
 
-
-    def display_image(self, image_path):
-        # Load and display the image
-        pixmap = QPixmap(image_path)
-        if pixmap.isNull():
+        self.pixmap = QPixmap(image_path)
+        if self.pixmap.isNull():
             print("Failed to load image.")
             return
 
-        self.label.setPixmap(pixmap)
-        self.label.setAlignment(Qt.AlignCenter)
+        self.resize_image()
 
-        file_name = os.path.basename(image_path)
-        self.setWindowTitle(file_name)
+
+    def resize_image(self):
+        # Scale the pixmap to fit the window while keeping the aspect ratio
+        scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.label.setPixmap(scaled_pixmap)
+
+
+    def resizeEvent(self, event):
+        # Handle window resize event
+        self.resize_image()
+        super().resizeEvent(event)
 
 
     def prev_image(self):
         if self.mgr.prev():
-            self.display_image(self.mgr.current_file())
+            self.load_image(self.mgr.current_file())
 
 
     def next_image(self):
         if self.mgr.next():
-            self.display_image(self.mgr.current_file())
+            self.load_image(self.mgr.current_file())
 
 
     def prev_dir(self):
         if self.mgr.prev_dir():
-            self.display_image(self.mgr.current_file())
+            self.load_image(self.mgr.current_file())
 
 
     def next_dir(self):
         if self.mgr.next_dir():
-            self.display_image(self.mgr.current_file())
+            self.load_image(self.mgr.current_file())
 
 
 if __name__ == '__main__':
