@@ -94,7 +94,6 @@ class ImageLoaderApp(QMainWindow):
 
         self.label.setPixmap(pixmap)
         self.label.setAlignment(Qt.AlignCenter)
-        self.resize(pixmap.width(), pixmap.height())
 
 
     def prev_image(self):
