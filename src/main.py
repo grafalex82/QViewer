@@ -21,6 +21,7 @@ class ImageLoaderApp(QMainWindow):
         self.setWindowTitle('Image Viewer')
 
         self.label = QLabel()
+        self.label.setStyleSheet("background-color: black")
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(self.label)
