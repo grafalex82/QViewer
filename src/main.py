@@ -10,6 +10,8 @@ class ImageLoaderApp(QMainWindow):
     def __init__(self, image_path=None):
         super().__init__()
 
+        self.fit_to_window = True
+
         self.init_ui()
         self.create_menu()
 
@@ -76,6 +78,16 @@ class ImageLoaderApp(QMainWindow):
         next_dir_action.triggered.connect(self.next_dir)
         view_menu.addAction(next_dir_action)
 
+        view_menu.addSeparator()
+
+        self.fit_to_window_action = QAction("Fit to Window", self, checkable=True, checked=self.fit_to_window)
+        self.fit_to_window_action.triggered.connect(self.set_fit_to_window)
+        view_menu.addAction(self.fit_to_window_action)
+        
+        self.actual_size_action = QAction("1:1 (Actual Size)", self, checkable=True, checked=not self.fit_to_window)
+        self.actual_size_action.triggered.connect(self.set_actual_size)
+        view_menu.addAction(self.actual_size_action)    
+
 
     def open_file(self):
         # Open a file dialog to select an image
@@ -102,15 +114,34 @@ class ImageLoaderApp(QMainWindow):
 
 
     def resize_image(self):
-        # Scale the pixmap to fit the window while keeping the aspect ratio
-        scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        self.label.setPixmap(scaled_pixmap)
+        if self.fit_to_window:
+            # Scale the pixmap to fit the window while keeping the aspect ratio
+            scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.label.setPixmap(scaled_pixmap)
+        else:
+            # Display actual size (1:1)
+            self.label.setPixmap(self.pixmap)
+            self.label.adjustSize()
 
 
     def resizeEvent(self, event):
         # Handle window resize event
         self.resize_image()
         super().resizeEvent(event)
+
+
+    def set_fit_to_window(self):
+        self.fit_to_window = True
+        self.fit_to_window_action.setChecked(True)
+        self.actual_size_action.setChecked(False)
+        self.resize_image()
+
+
+    def set_actual_size(self):
+        self.fit_to_window = False
+        self.fit_to_window_action.setChecked(False)
+        self.actual_size_action.setChecked(True)
+        self.resize_image()
 
 
     def prev_image(self):
