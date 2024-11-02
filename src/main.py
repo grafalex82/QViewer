@@ -14,6 +14,7 @@ class ImageSurface(QLabel):
         # Adjust look
         self.setStyleSheet("background-color: black")
         self.setAlignment(Qt.AlignCenter)
+        self.setMouseTracking(True)
 
         # Flags and variables
         self.is_selecting = False
@@ -35,6 +36,11 @@ class ImageSurface(QLabel):
         if self.is_selecting:
             self.selection_rect.setBottomRight(event.pos())
             self.update()
+        else:
+            if self.selection_rect.contains(event.pos()):
+                self.setCursor(Qt.CursorShape.PointingHandCursor)
+            else:
+                self.setCursor(Qt.CursorShape.ArrowCursor)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton and self.is_selecting:
