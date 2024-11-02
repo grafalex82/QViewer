@@ -6,16 +6,153 @@ from PyQt5.QtWidgets import *
 
 from file_mgr import FileMgr
 
-class ImageLoaderApp(QMainWindow):
+
+class ImageView(QLabel):
+    ZOOM_UNSET          = 0
+    ZOOM_1_TO_1         = 1
+    ZOOM_FIT_TO_WINDOW  = 2
+
+    def __init__(self):
+        super().__init__()
+
+        # Adjust look
+        self.setStyleSheet("background-color: black")
+        self.setAlignment(Qt.AlignCenter)
+
+        # Flags and variables
+        self.is_selecting = False
+        self.selection_rect = QRect()
+        self.pixmap = None
+        self.scale_factor = 1.
+        self.zoom_mode = self.ZOOM_FIT_TO_WINDOW
+        self.zoomed = False
+        self.viewport_size = QSize()
+
+
+    def load_image(self, image_path):
+        if not image_path:
+            self.pixmap = None
+
+        self.pixmap = QPixmap(image_path)
+        if self.pixmap.isNull():
+            print("Failed to load image.")
+            return
+        
+        self.reset_zoom()
+
+    # Zoom methods
+
+    def set_viewport_size(self, size):
+        self.viewport_size = size
+        self.resize_image()
+
+    def set_fit_to_window(self):
+        self.zoom_mode = self.ZOOM_FIT_TO_WINDOW
+        self.zoomed = False
+        self.resize_image()
+
+    def set_original_size(self):
+        self.zoom_mode = self.ZOOM_1_TO_1
+        self.zoomed = False
+        self.scale_factor = 1.
+        self.resize_image()
+
+    def zoom_in(self):
+        self.zoomed = True
+        self.scale_factor *= 1.25
+        self.resize_image()
+    
+    def zoom_out(self):
+        self.zoomed = True
+        self.scale_factor /= 1.25
+        self.resize_image()
+
+    def reset_zoom(self):
+        self.scale_factor = 1.
+        self.zoomed = False
+        self.resize_image()
+            
+    def resize_image(self):
+        if not self.pixmap:
+            return
+
+        if self.zoom_mode == self.ZOOM_FIT_TO_WINDOW and not self.zoomed:
+            factor_h = self.viewport_size.height() / self.pixmap.size().height()
+            factor_w = self.viewport_size.width() / self.pixmap.size().width()
+            self.scale_factor = min(factor_h, factor_w)
+            scaled_pixmap = self.pixmap.scaled(self.viewport_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        else:
+            scaled_size = self.pixmap.size() * self.scale_factor
+            scaled_pixmap = self.pixmap.scaled(scaled_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+        print(f"Original size: {self.pixmap.size()}")
+        print(f"Scaled size: {scaled_pixmap.size()}")
+        self.setPixmap(scaled_pixmap)
+        self.adjustSize()
+
+
+
+    # def zoom_to_selection(self):
+    #     if self.selection_rect.isValid() and self.pixmap:
+    #         # Map selection rectangle to image coordinates
+    #         label_pixmap = self.image_view.pixmap()
+    #         scale_x = self.pixmap.width() / label_pixmap.width()
+    #         scale_y = self.pixmap.height() / label_pixmap.height()
+
+    #         selected_rect = QRect(
+    #             int(self.selection_rect.x() * scale_x),
+    #             int(self.selection_rect.y() * scale_y),
+    #             int(self.selection_rect.width() * scale_x),
+    #             int(self.selection_rect.height() * scale_y)
+    #         )
+
+    #         # Crop and display the selected region
+    #         cropped_pixmap = self.pixmap.copy(selected_rect)
+    #         self.image_view.setPixmap(cropped_pixmap.scaled(
+    #             self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+    #         ))
+
+
+    # Event handlers
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.is_selecting = True
+            self.selection_rect.setTopLeft(event.pos())
+            self.selection_rect.setBottomRight(event.pos())
+            self.update()
+
+    def mouseMoveEvent(self, event):
+        if self.is_selecting:
+            self.selection_rect.setBottomRight(event.pos())
+            self.update()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton and self.is_selecting:
+            self.is_selecting = False
+
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self.is_selecting:
+            print(f"Paint even: {self.selection_rect}")
+            painter = QPainter(self)
+            painter.setPen(QPen(Qt.blue, 5, Qt.SolidLine))
+            painter.drawRect(self.selection_rect)
+
+
+
+class ImageViewerApp(QMainWindow):
     def __init__(self, image_path=None):
         super().__init__()
 
+        # Flags and variables
         self.fit_to_window = True
+        self.mgr = FileMgr()
 
         self.init_ui()
         self.create_menu()
 
-        self.mgr = FileMgr()
         if image_path:
             self.prepare_for_file(image_path)
 
@@ -23,12 +160,10 @@ class ImageLoaderApp(QMainWindow):
     def init_ui(self):
         self.setWindowTitle('Image Viewer')
 
-        self.label = QLabel()
-        self.label.setStyleSheet("background-color: black")
-        self.label.setAlignment(Qt.AlignCenter)
+        self.image_view = ImageView()
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setWidget(self.label)
+        self.scroll_area.setWidget(self.image_view)
         self.setCentralWidget(self.scroll_area)
 
         self.resize(800, 600)
@@ -80,14 +215,30 @@ class ImageLoaderApp(QMainWindow):
 
         view_menu.addSeparator()
 
-        self.fit_to_window_action = QAction("Fit to Window", self, checkable=True, checked=self.fit_to_window)
+        self.fit_to_window_action = QAction("Fit to Window", self, checkable=True)
         self.fit_to_window_action.triggered.connect(self.set_fit_to_window)
         view_menu.addAction(self.fit_to_window_action)
         
-        self.actual_size_action = QAction("1:1 (Actual Size)", self, checkable=True, checked=not self.fit_to_window)
-        self.actual_size_action.triggered.connect(self.set_actual_size)
-        view_menu.addAction(self.actual_size_action)    
+        self.original_size_action = QAction("1:1 (Original Size)", self, checkable=True)
+        self.original_size_action.triggered.connect(self.set_original_size)
+        view_menu.addAction(self.original_size_action)
 
+        self.update_zoom_menus()
+
+        view_menu.addSeparator()
+
+        zoom_in_action = QAction("Zoom In", self)
+        zoom_in_action.setShortcut("+")
+        zoom_in_action.triggered.connect(self.zoom_in)
+        view_menu.addAction(zoom_in_action)
+
+        zoom_out_action = QAction("Zoom Out", self)
+        zoom_out_action.setShortcut("-")
+        zoom_out_action.triggered.connect(self.zoom_out)
+        view_menu.addAction(zoom_out_action)
+
+
+    # File operations
 
     def open_file(self):
         # Open a file dialog to select an image
@@ -105,43 +256,42 @@ class ImageLoaderApp(QMainWindow):
         file_name = os.path.basename(image_path)
         self.setWindowTitle(file_name)
 
-        self.pixmap = QPixmap(image_path)
-        if self.pixmap.isNull():
-            print("Failed to load image.")
-            return
-
-        self.resize_image()
+        self.image_view.load_image(image_path)
 
 
-    def resize_image(self):
-        if self.fit_to_window:
-            # Scale the pixmap to fit the window while keeping the aspect ratio
-            scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.label.setPixmap(scaled_pixmap)
-        else:
-            # Display actual size (1:1)
-            self.label.setPixmap(self.pixmap)
-            self.label.adjustSize()
-
+    # Event handlers
 
     def resizeEvent(self, event):
-        # Handle window resize event
-        self.resize_image()
+        print(f"Setting viewpoirt size: {self.scroll_area.size()}")
+        self.image_view.set_viewport_size(self.scroll_area.size().shrunkBy(QMargins(1, 1, 1, 1)))
         super().resizeEvent(event)
 
 
+    # Actions    
+
     def set_fit_to_window(self):
-        self.fit_to_window = True
-        self.fit_to_window_action.setChecked(True)
-        self.actual_size_action.setChecked(False)
-        self.resize_image()
+        self.image_view.set_fit_to_window()
+        self.update_zoom_menus()
 
 
-    def set_actual_size(self):
-        self.fit_to_window = False
-        self.fit_to_window_action.setChecked(False)
-        self.actual_size_action.setChecked(True)
-        self.resize_image()
+    def set_original_size(self):
+        self.image_view.set_original_size()
+        self.update_zoom_menus()
+
+
+    def zoom_in(self):
+        self.image_view.zoom_in()
+        self.update_zoom_menus()
+
+
+    def zoom_out(self):
+        self.image_view.zoom_out()
+        self.update_zoom_menus()
+
+
+    def update_zoom_menus(self):
+        self.fit_to_window_action.setChecked(self.image_view.zoom_mode == ImageView.ZOOM_FIT_TO_WINDOW)
+        self.original_size_action.setChecked(self.image_view.zoom_mode == ImageView.ZOOM_1_TO_1)
 
 
     def prev_image(self):
@@ -164,10 +314,12 @@ class ImageLoaderApp(QMainWindow):
             self.load_image(self.mgr.current_file())
 
 
+
+
 if __name__ == '__main__':
     image_path = sys.argv[1] if len(sys.argv) > 1 else None
 
     app = QApplication(sys.argv)
-    window = ImageLoaderApp(image_path)
+    window = ImageViewerApp(image_path)
     window.show()
     sys.exit(app.exec_())
