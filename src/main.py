@@ -7,11 +7,7 @@ from PyQt5.QtWidgets import *
 from file_mgr import FileMgr
 
 
-class ImageView(QLabel):
-    ZOOM_UNSET          = 0
-    ZOOM_1_TO_1         = 1
-    ZOOM_FIT_TO_WINDOW  = 2
-
+class ImageSurface(QLabel):
     def __init__(self):
         super().__init__()
 
@@ -22,11 +18,55 @@ class ImageView(QLabel):
         # Flags and variables
         self.is_selecting = False
         self.selection_rect = QRect()
-        self.pixmap = None
+
+
+
+
+    # Event handlers
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.is_selecting = True
+            self.selection_rect.setTopLeft(event.pos())
+            self.selection_rect.setBottomRight(event.pos())
+            self.update()
+
+    def mouseMoveEvent(self, event):
+        if self.is_selecting:
+            self.selection_rect.setBottomRight(event.pos())
+            self.update()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton and self.is_selecting:
+            self.is_selecting = False
+
+    
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self.is_selecting:
+            painter = QPainter(self)
+            painter.setPen(QPen(Qt.white, 3, Qt.DashLine))
+            painter.drawRect(self.selection_rect)
+
+
+
+class ImageView(QScrollArea):
+    ZOOM_UNSET          = 0
+    ZOOM_1_TO_1         = 1
+    ZOOM_FIT_TO_WINDOW  = 2
+
+    def __init__(self):
+        super().__init__()
+
+        self.surface = ImageSurface()
+        self.setWidgetResizable(True)
+        self.setWidget(self.surface)
+
+        # Flags and variables
         self.scale_factor = 1.
         self.zoom_mode = self.ZOOM_FIT_TO_WINDOW
-        self.zoomed = False
-        self.viewport_size = QSize()
+        self.zoom_changed = False
 
 
     def load_image(self, image_path):
@@ -37,59 +77,61 @@ class ImageView(QLabel):
         if self.pixmap.isNull():
             print("Failed to load image.")
             return
-        
+
         self.reset_zoom()
+
+
+    # Events
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.resize_image()
 
     # Zoom methods
 
-    def set_viewport_size(self, size):
-        self.viewport_size = size
-        self.resize_image()
-
     def set_fit_to_window(self):
         self.zoom_mode = self.ZOOM_FIT_TO_WINDOW
-        self.zoomed = False
+        self.zoom_changed = False
         self.resize_image()
 
     def set_original_size(self):
         self.zoom_mode = self.ZOOM_1_TO_1
-        self.zoomed = False
+        self.zoom_changed = False
         self.scale_factor = 1.
         self.resize_image()
 
     def zoom_in(self):
-        self.zoomed = True
+        self.zoom_changed = True
         self.scale_factor *= 1.25
         self.resize_image()
     
     def zoom_out(self):
-        self.zoomed = True
+        self.zoom_changed = True
         self.scale_factor /= 1.25
         self.resize_image()
 
     def reset_zoom(self):
         self.scale_factor = 1.
-        self.zoomed = False
+        self.zoom_changed = False
         self.resize_image()
             
     def resize_image(self):
         if not self.pixmap:
             return
 
-        if self.zoom_mode == self.ZOOM_FIT_TO_WINDOW and not self.zoomed:
-            factor_h = self.viewport_size.height() / self.pixmap.size().height()
-            factor_w = self.viewport_size.width() / self.pixmap.size().width()
+        if self.zoom_mode == self.ZOOM_FIT_TO_WINDOW and not self.zoom_changed:
+            factor_h = float(self.size().height()) / self.pixmap.size().height()
+            factor_w = float(self.size().width()) / self.pixmap.size().width()
             self.scale_factor = min(factor_h, factor_w)
-            scaled_pixmap = self.pixmap.scaled(self.viewport_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            scaled_pixmap = self.pixmap.scaled(self.size().shrunkBy(QMargins(1, 1, 1, 1)),
+                                               Qt.KeepAspectRatio, Qt.SmoothTransformation)
         else:
             scaled_size = self.pixmap.size() * self.scale_factor
             scaled_pixmap = self.pixmap.scaled(scaled_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
         print(f"Original size: {self.pixmap.size()}")
         print(f"Scaled size: {scaled_pixmap.size()}")
-        self.setPixmap(scaled_pixmap)
-        self.adjustSize()
-
+        self.surface.setPixmap(scaled_pixmap)
+        self.surface.adjustSize()
 
 
     # def zoom_to_selection(self):
@@ -113,32 +155,6 @@ class ImageView(QLabel):
     #         ))
 
 
-    # Event handlers
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.is_selecting = True
-            self.selection_rect.setTopLeft(event.pos())
-            self.selection_rect.setBottomRight(event.pos())
-            self.update()
-
-    def mouseMoveEvent(self, event):
-        if self.is_selecting:
-            self.selection_rect.setBottomRight(event.pos())
-            self.update()
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton and self.is_selecting:
-            self.is_selecting = False
-
-
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        if self.is_selecting:
-            print(f"Paint even: {self.selection_rect}")
-            painter = QPainter(self)
-            painter.setPen(QPen(Qt.blue, 5, Qt.SolidLine))
-            painter.drawRect(self.selection_rect)
 
 
 
@@ -161,10 +177,7 @@ class ImageViewerApp(QMainWindow):
         self.setWindowTitle('Image Viewer')
 
         self.image_view = ImageView()
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setWidget(self.image_view)
-        self.setCentralWidget(self.scroll_area)
+        self.setCentralWidget(self.image_view)
 
         self.resize(800, 600)
         self.setMinimumSize(640, 480)
@@ -259,14 +272,6 @@ class ImageViewerApp(QMainWindow):
         self.image_view.load_image(image_path)
 
 
-    # Event handlers
-
-    def resizeEvent(self, event):
-        print(f"Setting viewpoirt size: {self.scroll_area.size()}")
-        self.image_view.set_viewport_size(self.scroll_area.size().shrunkBy(QMargins(1, 1, 1, 1)))
-        super().resizeEvent(event)
-
-
     # Actions    
 
     def set_fit_to_window(self):
@@ -312,7 +317,6 @@ class ImageViewerApp(QMainWindow):
     def next_dir(self):
         if self.mgr.next_dir():
             self.load_image(self.mgr.current_file())
-
 
 
 
