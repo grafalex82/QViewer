@@ -18,11 +18,12 @@ class ImageSurface(QLabel):
         self.setAlignment(Qt.AlignCenter)
         self.setMouseTracking(True)
 
-        # Flags and variables
+        self.reset_selection()
+
+    def reset_selection(self):
         self.is_selecting = False
         self.selection_start = QPoint()
         self.selection_rect = QRect()
-
 
     # Event handlers
 
@@ -58,7 +59,6 @@ class ImageSurface(QLabel):
             self.is_selecting = False
 
     
-
     def paintEvent(self, event):
         super().paintEvent(event)
         if self.is_selecting:
@@ -99,6 +99,7 @@ class ImageView(QScrollArea):
             return
 
         self.reset_zoom()
+        self.surface.reset_selection()
 
 
     # Events
