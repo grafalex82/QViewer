@@ -20,25 +20,32 @@ class ImageSurface(QLabel):
 
         # Flags and variables
         self.is_selecting = False
+        self.selection_start = QPoint()
         self.selection_rect = QRect()
 
 
     # Event handlers
 
     def mousePressEvent(self, event):
+        
         if event.button() == Qt.LeftButton:
             if self.selection_rect.contains(event.pos()):
                 self.zoom_to_selection_signal.emit(self.selection_rect)
                 self.selection_rect = QRect()
             else:
                 self.is_selecting = True
-                self.selection_rect.setTopLeft(event.pos())
-                self.selection_rect.setBottomRight(event.pos())
+                self.selection_start = event.pos()
             self.update()
 
     def mouseMoveEvent(self, event):
         if self.is_selecting:
+            self.selection_rect.setTopLeft(self.selection_start)
             self.selection_rect.setBottomRight(event.pos())
+
+            pixmap_rect = self.pixmap().rect()
+            pixmap_rect.moveCenter(self.rect().center())
+            self.selection_rect = self.selection_rect.intersected(pixmap_rect)
+
             self.update()
         else:
             if self.selection_rect.contains(event.pos()):
