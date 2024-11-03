@@ -25,28 +25,32 @@ class ImageSurface(QLabel):
         self.selection_start = QPoint()
         self.selection_rect = QRect()
 
+    def pixmap_rect(self):
+        rect = self.pixmap().rect()
+        rect.moveCenter(self.rect().center())
+        return rect
+
     # Event handlers
 
     def mousePressEvent(self, event):
-        
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.LeftButton:   
             if self.selection_rect.contains(event.pos()):
-                self.zoom_to_selection_signal.emit(self.selection_rect)
+                # Handle click in a selected area, to trigger zoom to selection
+
+                # First convert widget coordinates to image coordinates
+                tl = self.pixmap_rect().topLeft()
+                self.zoom_to_selection_signal.emit(self.selection_rect.translated(-tl))
                 self.selection_rect = QRect()
             else:
+                # Nothing was selected earlier, then probably this is a new selection
                 self.is_selecting = True
                 self.selection_start = event.pos()
+
             self.update()
 
     def mouseMoveEvent(self, event):
         if self.is_selecting:
-            self.selection_rect.setTopLeft(self.selection_start)
-            self.selection_rect.setBottomRight(event.pos())
-
-            pixmap_rect = self.pixmap().rect()
-            pixmap_rect.moveCenter(self.rect().center())
-            self.selection_rect = self.selection_rect.intersected(pixmap_rect)
-
+            self.selection_rect = self.pixmap_rect().intersected(QRect(self.selection_start, event.pos()))
             self.update()
         else:
             if self.selection_rect.contains(event.pos()):
