@@ -8,6 +8,8 @@ from file_mgr import FileMgr
 
 
 class ImageSurface(QLabel):
+    zoom_to_selection_signal = pyqtSignal(QRect, name='zoom_to_selection')
+
     def __init__(self):
         super().__init__()
 
@@ -21,15 +23,17 @@ class ImageSurface(QLabel):
         self.selection_rect = QRect()
 
 
-
-
     # Event handlers
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.is_selecting = True
-            self.selection_rect.setTopLeft(event.pos())
-            self.selection_rect.setBottomRight(event.pos())
+            if self.selection_rect.contains(event.pos()):
+                self.zoom_to_selection_signal.emit(self.selection_rect)
+                self.selection_rect = QRect()
+            else:
+                self.is_selecting = True
+                self.selection_rect.setTopLeft(event.pos())
+                self.selection_rect.setBottomRight(event.pos())
             self.update()
 
     def mouseMoveEvent(self, event):
@@ -69,6 +73,8 @@ class ImageView(QScrollArea):
         self.setWidgetResizable(True)
         self.setWidget(self.surface)
 
+        self.surface.zoom_to_selection.connect(self.zoom_to_selection)
+
         # Flags and variables
         self.scale_factor = 1.
         self.zoom_mode = self.ZOOM_FIT_TO_WINDOW
@@ -91,6 +97,7 @@ class ImageView(QScrollArea):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.resize_image()
+
 
     # Zoom methods
 
@@ -139,29 +146,40 @@ class ImageView(QScrollArea):
         self.surface.setPixmap(scaled_pixmap)
         self.surface.adjustSize()
 
+    @pyqtSlot(QRect)
+    def zoom_to_selection(self, rect):
+        print()
+        rect = rect.normalized()
+        print(f"Zoom to selection: {rect}")
+        print(f"Current scale factor: {self.scale_factor}")
+        print(f"Zoom rect in Image coordinates: {rect.topLeft() / self.scale_factor} ({rect.size() / self.scale_factor})")
 
-    # def zoom_to_selection(self):
-    #     if self.selection_rect.isValid() and self.pixmap:
-    #         # Map selection rectangle to image coordinates
-    #         label_pixmap = self.image_view.pixmap()
-    #         scale_x = self.pixmap.width() / label_pixmap.width()
-    #         scale_y = self.pixmap.height() / label_pixmap.height()
+        center = rect.center() / self.scale_factor
+        size = rect.size() / self.scale_factor
+        print(f"Zoom center: {center}")
 
-    #         selected_rect = QRect(
-    #             int(self.selection_rect.x() * scale_x),
-    #             int(self.selection_rect.y() * scale_y),
-    #             int(self.selection_rect.width() * scale_x),
-    #             int(self.selection_rect.height() * scale_y)
-    #         )
+        sb = self.horizontalScrollBar()
+        print(f"Scroll Bar: {sb.minimum()}/{sb.value()}/{sb.maximum()} ({sb.pageStep()})")
 
-    #         # Crop and display the selected region
-    #         cropped_pixmap = self.pixmap.copy(selected_rect)
-    #         self.image_view.setPixmap(cropped_pixmap.scaled(
-    #             self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
-    #         ))
+        # Calculate new scale factor
+        factor_h = float(rect.size().height()) / self.size().height()
+        factor_w = float(rect.size().width()) / self.size().width()
+        extra_scale = max(factor_h, factor_w)
+        self.scale_factor /= extra_scale
+        self.zoom_changed = True
+        self.resize_image()
 
+        print(f"New scale factor: {self.scale_factor}")
 
+        # Scroll to position
+        x = (center.x() - size.width() / 2) * self.scale_factor
+        y = (center.y() - size.height() / 2) * self.scale_factor
+        print(f"Scroll To: {x}, {y}")
+        self.horizontalScrollBar().setSliderPosition(int(x))
+        self.verticalScrollBar().setSliderPosition(int(y))
 
+        sb = self.horizontalScrollBar()
+        print(f"Scroll Bar: {sb.minimum()}/{sb.value()}/{sb.maximum()} ({sb.pageStep()})")
 
 
 class ImageViewerApp(QMainWindow):
