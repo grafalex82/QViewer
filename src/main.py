@@ -63,6 +63,7 @@ class ImageSurface(QLabel):
         super().paintEvent(event)
         if self.is_selecting:
             painter = QPainter(self)
+            painter.setCompositionMode(QPainter.CompositionMode.RasterOp_SourceXorDestination)
             painter.setPen(QPen(Qt.white, 3, Qt.DashLine))
             painter.drawRect(self.selection_rect)
 
