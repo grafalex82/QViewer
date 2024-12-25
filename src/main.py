@@ -13,12 +13,18 @@ class ImageSurface(QLabel):
     def __init__(self):
         super().__init__()
 
+        # Variables
+        self.file_name = None
+
         # Adjust look
         self.setStyleSheet("background-color: black")
         self.setAlignment(Qt.AlignCenter)
         self.setMouseTracking(True)
 
         self.reset_selection()
+
+    def show_file_name(self, file_name):
+        self.file_name = file_name
 
     def reset_selection(self):
         self.is_selecting = False
@@ -71,6 +77,19 @@ class ImageSurface(QLabel):
             painter.setPen(QPen(Qt.white, 3, Qt.DashLine))
             painter.drawRect(self.selection_rect)
 
+        if self.file_name:
+            painter = QPainter(self)
+
+            # Measure text size
+            painter.setFont(QFont("Arial", 12))
+            text_rect = painter.boundingRect(0, 0, self.width(), self.height(), Qt.TextSingleLine, self.file_name)
+            painter.setBrush(QBrush(QColor("black")))
+            painter.drawRect(text_rect)
+
+            # Draw the text
+            painter.setPen(QColor("green"))
+            painter.drawText(text_rect, Qt.TextSingleLine, self.file_name)
+
 
 
 class ImageView(QScrollArea):
@@ -91,6 +110,10 @@ class ImageView(QScrollArea):
         self.scale_factor = 1.
         self.zoom_mode = self.ZOOM_FIT_TO_WINDOW
         self.zoom_changed = False
+
+
+    def show_file_name(self, file_name):
+        self.surface.show_file_name(file_name)
 
 
     def load_image(self, image_path):
@@ -383,18 +406,18 @@ class ImageViewerApp(QMainWindow):
 
     def show_full_screen(self):
         self.menuBar().setVisible(False)
+        self.image_view.show_file_name(self.mgr.current_file())
         self.showFullScreen()
 
 
     def show_normal(self):
         if self.maximized:
-            print("Show Maximized")
             self.setWindowState(Qt.WindowState.WindowMaximized)
             self.showMaximized()
         else:
-            print("Show Normal")
             self.showNormal()
         self.menuBar().setVisible(True)
+        self.image_view.show_file_name(None)
 
 
     def keyPressEvent(self, event):
