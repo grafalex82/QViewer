@@ -96,6 +96,7 @@ class ImageView(QScrollArea):
     def load_image(self, image_path):
         if not image_path:
             self.pixmap = None
+            return
 
         self.pixmap = QPixmap(image_path)
         if self.pixmap.isNull():
@@ -215,8 +216,7 @@ class ImageViewerApp(QMainWindow):
         self.init_ui()
         self.create_menu()
 
-        if image_path:
-            self.prepare_for_file(image_path)
+        self.prepare_for_file(image_path)
 
 
     def init_ui(self):
@@ -312,8 +312,11 @@ class ImageViewerApp(QMainWindow):
 
 
     def load_image(self, image_path):
-        file_name = os.path.basename(image_path)
-        self.setWindowTitle(file_name)
+        if image_path:
+            file_name = os.path.basename(image_path)
+            self.setWindowTitle(file_name)
+        else:
+            self.setWindowTitle("")
 
         self.image_view.load_image(image_path)
 
