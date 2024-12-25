@@ -171,6 +171,7 @@ class ImageView(QScrollArea):
         size = rect.size() / self.scale_factor
         print(f"Zoom center: {center}")
 
+        # TODO Remove
         sb = self.horizontalScrollBar()
         print(f"Scroll Bar: {sb.minimum()}/{sb.value()}/{sb.maximum()} ({sb.pageStep()})")
 
@@ -185,12 +186,20 @@ class ImageView(QScrollArea):
         print(f"New scale factor: {self.scale_factor}")
 
         # Scroll to position
-        x = (center.x() - size.width() / 2) * self.scale_factor
-        y = (center.y() - size.height() / 2) * self.scale_factor
+        new_size = size * self.scale_factor
+        print(f"New screen Size: {new_size}")
+        new_center = center * self.scale_factor
+        print(f"New center: {new_center}")
+        print(f"Screen size: {self.size()}")
+        size_diff = self.size() - new_size
+
+        x = (center.x() - size.width() / 2) * self.scale_factor - size_diff.width() / 2
+        y = (center.y() - size.height() / 2) * self.scale_factor - size_diff.height() / 2
         print(f"Scroll To: {x}, {y}")
         self.horizontalScrollBar().setSliderPosition(int(x))
         self.verticalScrollBar().setSliderPosition(int(y))
 
+        # TODO Remove
         sb = self.horizontalScrollBar()
         print(f"Scroll Bar: {sb.minimum()}/{sb.value()}/{sb.maximum()} ({sb.pageStep()})")
 
