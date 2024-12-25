@@ -212,6 +212,7 @@ class ImageViewerApp(QMainWindow):
         # Flags and variables
         self.fit_to_window = True
         self.mgr = FileMgr()
+        self.maximized = False
 
         self.init_ui()
         self.create_menu()
@@ -282,6 +283,11 @@ class ImageViewerApp(QMainWindow):
         self.original_size_action.triggered.connect(self.set_original_size)
         view_menu.addAction(self.original_size_action)
 
+        full_screen_action = QAction("Toggle Full screen", self)
+        full_screen_action.setShortcut("F")
+        full_screen_action.triggered.connect(self.toggle_full_screen)
+        view_menu.addAction(full_screen_action)
+
         self.update_zoom_menus()
 
         view_menu.addSeparator()
@@ -295,7 +301,6 @@ class ImageViewerApp(QMainWindow):
         zoom_out_action.setShortcut("-")
         zoom_out_action.triggered.connect(self.zoom_out)
         view_menu.addAction(zoom_out_action)
-
 
     # File operations
 
@@ -367,6 +372,38 @@ class ImageViewerApp(QMainWindow):
         if self.mgr.next_dir():
             self.load_image(self.mgr.current_file())
 
+
+    def toggle_full_screen(self):
+        if self.isFullScreen():
+            self.show_normal()
+        else:
+            self.maximized = self.isMaximized()
+            self.show_full_screen()
+
+
+    def show_full_screen(self):
+        self.menuBar().setVisible(False)
+        self.showFullScreen()
+
+
+    def show_normal(self):
+        if self.maximized:
+            print("Show Maximized")
+            self.setWindowState(Qt.WindowState.WindowMaximized)
+            self.showMaximized()
+        else:
+            print("Show Normal")
+            self.showNormal()
+        self.menuBar().setVisible(True)
+
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return or event.key() == Qt.Key_F:
+            self.toggle_full_screen()
+
+        # Allow 'Escape' key to exit full screen
+        if event.key() == Qt.Key_Escape:
+            self.show_normal()
 
 
 if __name__ == '__main__':
