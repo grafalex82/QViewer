@@ -58,7 +58,7 @@ class FileMgr:
 
             
     def current_file(self):
-        if self.file_index != None:
+        if self.file_index is not None:
             fname = self.directory_files[self.file_index]
             return os.path.join(self.directory, fname)
         return None
@@ -69,7 +69,7 @@ class FileMgr:
 
 
     def prev(self, allow_prev_dir = False):
-        if self.file_index == None:
+        if self.file_index is None:
             return False
         
         if self.file_index > 0:
@@ -80,7 +80,7 @@ class FileMgr:
 
 
     def next(self, allow_next_dir = False):
-        if self.file_index == None:
+        if self.file_index is None:
             return False
 
         if self.file_index < len(self.directory_files) - 1:
@@ -91,7 +91,7 @@ class FileMgr:
     
 
     def first(self):
-        if self.file_index == None:
+        if self.file_index is None:
             return False
 
         self.file_index = 0
@@ -99,7 +99,7 @@ class FileMgr:
     
 
     def last(self):
-        if self.file_index == None:
+        if self.file_index is None:
             return False
 
         self.file_index = len(self.directory_files) - 1
