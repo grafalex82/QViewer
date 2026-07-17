@@ -241,7 +241,7 @@ class ImageViewerApp(QMainWindow):
         self.init_ui()
         self.create_menu()
 
-        self.prepare_for_file(image_path)
+        self.prepare_for_path(image_path)
 
 
     def init_ui(self):
@@ -353,6 +353,11 @@ class ImageViewerApp(QMainWindow):
 
     def prepare_for_file(self, image_path):
         self.mgr.load_file(image_path)
+        self.load_image(self.mgr.current_file())
+
+
+    def prepare_for_path(self, image_path):
+        self.mgr.load_path(image_path)
         self.load_image(self.mgr.current_file())
 
 

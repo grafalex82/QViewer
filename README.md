@@ -88,6 +88,12 @@ Or open an image directly:
 python src/main.py "C:\\Pictures\\example.jpg"
 ```
 
+You can also open a folder; QViewer loads its first file alphabetically:
+
+```powershell
+python src/main.py "C:\\Pictures"
+```
+
 ## Controls
 
 | Action | Shortcut |

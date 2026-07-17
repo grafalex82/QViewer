@@ -34,6 +34,29 @@ def test_load_file(mgr, testdir):
     assert mgr.current_directory() == testdir
 
 
+def test_load_path_with_file(mgr, testdir):
+    fname = str(testdir.join("test2.jpg"))
+
+    mgr.load_path(fname)
+
+    assert mgr.current_file() == fname
+
+
+def test_load_path_with_directory_loads_first_file(mgr, testdir):
+    mgr.load_path(str(testdir))
+
+    assert mgr.current_file() == testdir.join("test1.jpg")
+
+
+def test_load_path_with_empty_directory(mgr, testdir):
+    empty_dir = testdir.join("Sub2Empty")
+
+    mgr.load_path(str(empty_dir))
+
+    assert mgr.current_directory() == empty_dir
+    assert mgr.current_file() == None
+
+
 def test_load_directory(mgr, testdir):
     mgr.load_directory(testdir)
     assert mgr.current_file() == testdir.join("test1.jpg")
@@ -155,4 +178,3 @@ def test_prev_dir2(mgr, testdir):
     assert mgr.prev_dir() == True
     assert mgr.current_directory() == testdir.join("Sub1")
     assert mgr.current_file() == testdir.join("Sub1").join("test4.jpg")
-

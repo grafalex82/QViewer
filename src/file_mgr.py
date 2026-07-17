@@ -11,6 +11,13 @@ class FileMgr:
         self.directory_subdirs = []
 
 
+    def load_path(self, path):
+        if path and os.path.isdir(path):
+            self.load_directory(path)
+        else:
+            self.load_file(path)
+
+
     def load_file(self, fname):
         if not fname:
             self.reset_current_dir()    
