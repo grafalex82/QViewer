@@ -95,6 +95,7 @@ python src/main.py "C:\\Pictures\\example.jpg"
 | Open image | `Ctrl+O` |
 | Quit | `Ctrl+Q` |
 | Previous / next image | `Left` / `Right` |
+| First / last image | `Home` / `End` |
 | Previous / next sibling folder | `Ctrl+Left` / `Ctrl+Right` |
 | Toggle full screen | `F` or `Enter` |
 | Exit full screen | `Esc` |

@@ -289,6 +289,18 @@ class ImageViewerApp(QMainWindow):
         view_menu.addAction(next_action)
         self.addAction(next_action)
 
+        first_action = QAction("First Image", self)
+        first_action.setShortcut("Home")
+        first_action.triggered.connect(self.first_image)
+        view_menu.addAction(first_action)
+        self.addAction(first_action)
+
+        last_action = QAction("Last Image", self)
+        last_action.setShortcut("End")
+        last_action.triggered.connect(self.last_image)
+        view_menu.addAction(last_action)
+        self.addAction(last_action)
+
         prev_dir_action = QAction("Previous Directory", self)
         prev_dir_action.setShortcut("Ctrl+Left")
         prev_dir_action.triggered.connect(self.prev_dir)
@@ -398,6 +410,16 @@ class ImageViewerApp(QMainWindow):
 
     def next_image(self):
         if self.mgr.next():
+            self.load_image(self.mgr.current_file())
+
+
+    def first_image(self):
+        if self.mgr.first():
+            self.load_image(self.mgr.current_file())
+
+
+    def last_image(self):
+        if self.mgr.last():
             self.load_image(self.mgr.current_file())
 
 

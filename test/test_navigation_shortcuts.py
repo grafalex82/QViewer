@@ -26,6 +26,8 @@ def exercise_navigation_shortcuts(window, app):
     shortcuts = (
         (window.mgr.prev, Qt.Key_Left, Qt.NoModifier),
         (window.mgr.next, Qt.Key_Right, Qt.NoModifier),
+        (window.mgr.first, Qt.Key_Home, Qt.NoModifier),
+        (window.mgr.last, Qt.Key_End, Qt.NoModifier),
         (window.mgr.prev_dir, Qt.Key_Left, Qt.ControlModifier),
         (window.mgr.next_dir, Qt.Key_Right, Qt.ControlModifier),
     )
