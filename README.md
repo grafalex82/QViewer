@@ -134,4 +134,11 @@ checks performed.
 
 ## License
 
-No license has been selected yet.
+QViewer is free software licensed under the GNU General Public License,
+version 3 or (at your option) any later version (`GPL-3.0-or-later`). See
+[`LICENSE`](LICENSE) for the complete terms.
+
+QViewer uses the GPL edition of PyQt5. If you distribute QViewer, including a
+packaged executable, you must comply with the GPL and provide recipients with
+the corresponding source code. Dependencies retain their own licenses; see
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
