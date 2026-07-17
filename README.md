@@ -117,6 +117,9 @@ The existing tests cover directory and file navigation. GUI interaction tests,
 formatting, linting, and continuous integration are planned as part of the
 developer-foundation work.
 
+See the [test suite documentation](test/README.md) for test organization and
+test creation guidelines.
+
 ## Project layout
 
 ```text
