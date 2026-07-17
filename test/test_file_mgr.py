@@ -24,6 +24,7 @@ def testdir(tmpdir):
 
 def test_empty_mgr(mgr):
     assert mgr.current_file() == None
+    assert mgr.current_file_position() == None
 
 
 def test_load_file(mgr, testdir):
@@ -42,12 +43,28 @@ def test_load_directory(mgr, testdir):
 def test_empty_directory(mgr, testdir):
     mgr.load_directory(testdir.join("Sub2Empty"))
     assert mgr.current_file() == None
+    assert mgr.current_file_position() == None
 
 
 def test_load_file_arbitrary(mgr, testdir):
     fname = str(testdir.join("test2.jpg"))  # Not the first and not the last in the directory
     mgr.load_file(fname)
     assert fname == mgr.current_file()
+    assert mgr.current_file_position() == (2, 3)
+
+
+def test_file_position_updates_during_navigation(mgr, testdir):
+    mgr.load_file(testdir.join("test1.jpg"))
+    assert mgr.current_file_position() == (1, 3)
+
+    assert mgr.next()
+    assert mgr.current_file_position() == (2, 3)
+
+    assert mgr.last()
+    assert mgr.current_file_position() == (3, 3)
+
+    assert mgr.first()
+    assert mgr.current_file_position() == (1, 3)
 
 
 def test_next(mgr, testdir):

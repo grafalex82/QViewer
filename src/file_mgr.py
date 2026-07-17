@@ -64,6 +64,13 @@ class FileMgr:
         return None
 
 
+    def current_file_position(self):
+        if self.file_index is None:
+            return None
+
+        return self.file_index + 1, len(self.directory_files)
+
+
     def current_directory(self):
         return self.directory
 

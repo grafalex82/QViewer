@@ -25,6 +25,7 @@ class ImageSurface(QLabel):
 
     def show_file_name(self, file_name):
         self.file_name = file_name
+        self.update()
 
     def reset_selection(self):
         self.is_selecting = False
@@ -339,12 +340,22 @@ class ImageViewerApp(QMainWindow):
         self.load_image(self.mgr.current_file())
 
 
+    def current_file_display_name(self):
+        image_path = self.mgr.current_file()
+        if not image_path:
+            return None
+
+        position, total = self.mgr.current_file_position()
+        file_name = os.path.basename(image_path)
+        return f"{file_name} ({position}/{total})"
+
+
     def load_image(self, image_path):
-        if image_path:
-            file_name = os.path.basename(image_path)
-            self.setWindowTitle(file_name)
-        else:
-            self.setWindowTitle("")
+        display_name = self.current_file_display_name()
+        self.setWindowTitle(display_name or "")
+
+        if self.isFullScreen():
+            self.image_view.show_file_name(display_name)
 
         self.image_view.load_image(image_path)
 
@@ -406,7 +417,7 @@ class ImageViewerApp(QMainWindow):
 
     def show_full_screen(self):
         self.menuBar().setVisible(False)
-        self.image_view.show_file_name(self.mgr.current_file())
+        self.image_view.show_file_name(self.current_file_display_name())
         self.showFullScreen()
 
 
