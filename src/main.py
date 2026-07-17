@@ -281,21 +281,25 @@ class ImageViewerApp(QMainWindow):
         prev_action.setShortcut("Left")
         prev_action.triggered.connect(self.prev_image)
         view_menu.addAction(prev_action)
+        self.addAction(prev_action)
 
         next_action = QAction("Next Image", self)
         next_action.setShortcut("Right")
         next_action.triggered.connect(self.next_image)
         view_menu.addAction(next_action)
+        self.addAction(next_action)
 
         prev_dir_action = QAction("Previous Directory", self)
         prev_dir_action.setShortcut("Ctrl+Left")
         prev_dir_action.triggered.connect(self.prev_dir)
         view_menu.addAction(prev_dir_action)
+        self.addAction(prev_dir_action)
 
         next_dir_action = QAction("Next Directory", self)
         next_dir_action.setShortcut("Ctrl+Right")
         next_dir_action.triggered.connect(self.next_dir)
         view_menu.addAction(next_dir_action)
+        self.addAction(next_dir_action)
 
         view_menu.addSeparator()
 
