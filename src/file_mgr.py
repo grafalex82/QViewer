@@ -23,7 +23,6 @@ class FileMgr:
         if not base_name in self.directory_files:
             raise RuntimeError(f"File {fname} not found")
         self.file_index = self.directory_files.index(base_name)
-        print(f"Setting current index to {self.file_index}")
 
 
     def load_directory(self, directory):
@@ -34,23 +33,17 @@ class FileMgr:
         self.directory_files, self.directory_subdirs = self.list_dir(directory)
         self.directory = directory
         self.file_index = 0 if len(self.directory_files) else None
-        print(f"Setting current directory to {self.directory}")
-        print(f"Files: {self.directory_files}")
-        print(f"Directories: {self.directory_subdirs}")
 
 
     def list_dir(self, directory):
-        print(f"List dir: {directory}")
         files = []
         subdirs = []
         for entry in os.listdir(directory):
             full_path = os.path.join(directory, entry)
             if os.path.isdir(full_path):
                 subdirs.append(entry)
-                print(f"Directory: {entry}")
             else:
                 files.append(entry)
-                print(f"File: {entry}")
 
         files.sort()
         subdirs.sort()
@@ -114,8 +107,6 @@ class FileMgr:
 
     def next_dir(self):
         parent, dirname = os.path.split(self.directory)
-        print(f"dirname={dirname}")
-        print(f"parent={parent}")
         files, subdirs = self.list_dir(parent)
         index = subdirs.index(dirname)
 
@@ -129,8 +120,6 @@ class FileMgr:
 
     def prev_dir(self):
         parent, dirname = os.path.split(self.directory)
-        print(f"dirname={dirname}")
-        print(f"parent={parent}")
         files, subdirs = self.list_dir(parent)
         index = subdirs.index(dirname)
 
