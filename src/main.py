@@ -229,7 +229,7 @@ class ImageView(QScrollArea):
         print(f"Scroll Bar: {sb.minimum()}/{sb.value()}/{sb.maximum()} ({sb.pageStep()})")
 
 
-class ImageViewerApp(QMainWindow):
+class ImageViewerMainWindow(QMainWindow):
     def __init__(self, image_path=None):
         super().__init__()
 
@@ -475,6 +475,6 @@ if __name__ == '__main__':
     image_path = sys.argv[1] if len(sys.argv) > 1 else None
 
     app = QApplication(sys.argv)
-    window = ImageViewerApp(image_path)
+    window = ImageViewerMainWindow(image_path)
     window.show()
     sys.exit(app.exec_())

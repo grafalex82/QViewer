@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
 
-from main import ImageViewerApp
+from main import ImageViewerMainWindow
 
 
 @pytest.fixture(scope="module")
@@ -15,7 +15,7 @@ def app():
 
 @pytest.fixture
 def window(app):
-    viewer = ImageViewerApp()
+    viewer = ImageViewerMainWindow()
     viewer.show()
     app.processEvents()
     yield viewer
