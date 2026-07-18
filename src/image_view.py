@@ -1,6 +1,6 @@
-from PyQt5.QtCore import QMargins, QPoint, QRect, Qt, pyqtSlot
+from PyQt5.QtCore import QPoint, QRect, Qt, pyqtSlot
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QScrollArea
+from PyQt5.QtWidgets import QFrame, QScrollArea
 
 from image_surface import ImageSurface
 
@@ -23,6 +23,7 @@ class ImageView(QScrollArea):
 
         self.pixmap = None
         self.surface = ImageSurface()
+        self.setFrameShape(QFrame.NoFrame)
         self.setWidgetResizable(True)
         self.setWidget(self.surface)
 
@@ -137,7 +138,7 @@ class ImageView(QScrollArea):
             factor_w = float(viewport_size.width()) / self.pixmap.size().width()
             self.scale_factor = min(factor_h, factor_w)
             scaled_pixmap = self.pixmap.scaled(
-                viewport_size.shrunkBy(QMargins(1, 1, 1, 1)),
+                viewport_size,
                 Qt.KeepAspectRatio,
                 Qt.SmoothTransformation,
             )

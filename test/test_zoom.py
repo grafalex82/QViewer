@@ -3,7 +3,7 @@ import pytest
 from PyQt5.QtCore import QEvent, QPoint, QPointF, Qt
 from PyQt5.QtGui import QMouseEvent, QPixmap, QWheelEvent
 from PyQt5.QtTest import QTest
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QFrame
 
 from image_view import ImageView
 from main import ImageViewerMainWindow
@@ -113,6 +113,20 @@ def test_lasso_zoom_fills_windowed_viewport(window, app):
     assert not window.isFullScreen()
 
     exercise_lasso_zoom(window, app)
+
+
+def test_image_view_has_no_frame(window):
+    assert window.image_view.frameShape() == QFrame.NoFrame
+
+
+def test_fitted_image_uses_full_viewport_height(window, app):
+    view = window.image_view
+    view.pixmap = QPixmap(1, 1)
+    view.pixmap.fill(Qt.white)
+    view.set_fit_to_window()
+    app.processEvents()
+
+    assert view.surface.pixmap().height() == view.viewport().height()
 
 
 def test_lasso_zoom_fills_full_screen_viewport(window, app):
