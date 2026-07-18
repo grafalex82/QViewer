@@ -16,6 +16,7 @@ class ImageView(QScrollArea):
     ZOOM_UNSET = 0
     ZOOM_1_TO_1 = 1
     ZOOM_FIT_TO_WINDOW = 2
+    WHEEL_ZOOM_FACTOR = 1.10
 
     def __init__(self):
         super().__init__()
@@ -56,10 +57,40 @@ class ImageView(QScrollArea):
         self.reset_zoom()
         self.surface.reset_selection()
 
+
     # Events
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.resize_image()
+
+
+    def wheelEvent(self, event):
+        if not self.pixmap or not event.angleDelta().y():
+            super().wheelEvent(event)
+            return
+
+        cursor_pos = self.viewport().mapFromGlobal(event.globalPos())
+        surface_pos = self.surface.mapFrom(self.viewport(), cursor_pos)
+        pixmap_rect = self.surface.pixmap_rect()
+        if not pixmap_rect.contains(surface_pos):
+            super().wheelEvent(event)
+            return
+
+        relative_x = float(surface_pos.x() - pixmap_rect.left()) / pixmap_rect.width()
+        relative_y = float(surface_pos.y() - pixmap_rect.top()) / pixmap_rect.height()
+        wheel_steps = float(event.angleDelta().y()) / 120.0
+
+        self.zoom_changed = True
+        self.scale_factor *= self.WHEEL_ZOOM_FACTOR ** wheel_steps
+        self.resize_image()
+
+        pixmap_rect = self.surface.pixmap_rect()
+        anchor_x = pixmap_rect.left() + relative_x * pixmap_rect.width()
+        anchor_y = pixmap_rect.top() + relative_y * pixmap_rect.height()
+        self.horizontalScrollBar().setValue(round(anchor_x - cursor_pos.x()))
+        self.verticalScrollBar().setValue(round(anchor_y - cursor_pos.y()))
+        event.accept()
+
 
     # Zoom methods
 
@@ -118,6 +149,7 @@ class ImageView(QScrollArea):
         print(f"Scaled size: {scaled_pixmap.size()}")
         self.surface.setPixmap(scaled_pixmap)
         self.surface.adjustSize()
+
 
     @pyqtSlot(QRect)
     def zoom_to_selection(self, rect):

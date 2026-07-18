@@ -40,7 +40,7 @@ The implemented behavior and known gaps are listed below.
   - [x] Zoom in and out with keyboard shortcuts.
   - [x] Lasso zoom: drag a rectangle over the image, then click it to zoom.
   - [ ] Unzoom with a Ctrl-mouse click
-  - [ ] Mouse-wheel zoom centred on the cursor.
+  - [x] Mouse-wheel zoom centred on the cursor.
   - [ ] Pan a zoomed image by dragging.
 - Review workflow
   - [ ] Mark or like good images.
