@@ -12,6 +12,7 @@ class ImageSurface(QLabel):
     """
 
     zoom_to_selection_signal = pyqtSignal(QRect, name="zoom_to_selection")
+    reset_zoom_signal = pyqtSignal(name="reset_zoom")
 
     def __init__(self):
         super().__init__()
@@ -47,7 +48,10 @@ class ImageSurface(QLabel):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            if self.selection_rect.contains(event.pos()):
+            if event.modifiers() & Qt.ControlModifier:
+                self.reset_selection()
+                self.reset_zoom_signal.emit()
+            elif self.selection_rect.contains(event.pos()):
                 # Handle click in a selected area, to trigger zoom to selection
 
                 # First convert widget coordinates to image coordinates

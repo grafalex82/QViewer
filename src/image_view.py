@@ -27,6 +27,7 @@ class ImageView(QScrollArea):
         self.setWidget(self.surface)
 
         self.surface.zoom_to_selection.connect(self.zoom_to_selection)
+        self.surface.reset_zoom_signal.connect(self.reset_zoom)
 
         # Flags and variables
         self.scale_factor = 1.0
