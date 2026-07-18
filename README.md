@@ -104,7 +104,7 @@ python src/main.py "C:\\Pictures"
 | First / last image | `Home` / `End` |
 | Previous / next sibling folder | `Ctrl+Left` / `Ctrl+Right` |
 | Toggle full screen | `F` or `Enter` |
-| Exit full screen | `Esc` |
+| Exit full screen, then quit | `Esc` |
 | Zoom in / out | `+` / `-` |
 
 Use the **View** menu to select fit-to-window or original-size display. To try

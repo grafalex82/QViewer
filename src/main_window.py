@@ -237,9 +237,15 @@ class ImageViewerMainWindow(QMainWindow):
         self.image_view.show_file_name(None)
 
     def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            if self.isFullScreen():
+                self.show_normal()
+            else:
+                self.close()
+            return
+
         if event.key() == Qt.Key_Return or event.key() == Qt.Key_F:
             self.toggle_full_screen()
+            return
 
-        # Allow 'Escape' key to exit full screen
-        if event.key() == Qt.Key_Escape:
-            self.show_normal()
+        super().keyPressEvent(event)

@@ -69,3 +69,28 @@ def test_scroll_bars_are_restored_after_full_screen(window, app):
     assert not window.isFullScreen()
     assert window.image_view.horizontalScrollBarPolicy() == Qt.ScrollBarAsNeeded
     assert window.image_view.verticalScrollBarPolicy() == Qt.ScrollBarAsNeeded
+
+
+def test_escape_closes_windowed_application(window, app):
+    assert not window.isFullScreen()
+
+    QTest.keyClick(window, Qt.Key_Escape)
+    app.processEvents()
+
+    assert not window.isVisible()
+
+
+def test_escape_exits_full_screen_before_closing(window, app):
+    window.show_full_screen()
+    app.processEvents()
+
+    QTest.keyClick(window, Qt.Key_Escape)
+    app.processEvents()
+
+    assert window.isVisible()
+    assert not window.isFullScreen()
+
+    QTest.keyClick(window, Qt.Key_Escape)
+    app.processEvents()
+
+    assert not window.isVisible()
