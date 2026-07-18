@@ -4,6 +4,13 @@ QViewer is a lightweight, easy-to-use image viewer built with Python and
 PyQt5. It is designed for quickly inspecting and reviewing images without leaving the
 keyboard or returning to a file manager.
 
+> **Inspiration:** QViewer is inspired by IrfanView, another lightweight and
+> fast image viewer with an excellent user experience. Some QViewer hotkeys are
+> therefore similar to IrfanView's. However, IrfanView lacks lasso zoom in
+> full-screen mode, a capability QViewer provides. IrfanView is focused solely
+> on viewing, so reviewing images requires a separate application. QViewer's
+> review mode lets you select good images as you view them.
+
 Main features are:
 - Windowed and full-screen modes.
 - Lasso or mouse-wheel zoom.
