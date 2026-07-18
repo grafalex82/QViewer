@@ -54,4 +54,18 @@ def test_navigation_shortcuts_work_in_full_screen_mode(window, app):
     app.processEvents()
     assert window.isFullScreen()
     assert not window.menuBar().isVisible()
+    assert window.image_view.horizontalScrollBarPolicy() == Qt.ScrollBarAlwaysOff
+    assert window.image_view.verticalScrollBarPolicy() == Qt.ScrollBarAlwaysOff
     exercise_navigation_shortcuts(window, app)
+
+
+def test_scroll_bars_are_restored_after_full_screen(window, app):
+    window.show_full_screen()
+    app.processEvents()
+
+    window.show_normal()
+    app.processEvents()
+
+    assert not window.isFullScreen()
+    assert window.image_view.horizontalScrollBarPolicy() == Qt.ScrollBarAsNeeded
+    assert window.image_view.verticalScrollBarPolicy() == Qt.ScrollBarAsNeeded

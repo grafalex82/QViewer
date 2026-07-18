@@ -222,6 +222,7 @@ class ImageViewerMainWindow(QMainWindow):
 
     def show_full_screen(self):
         self.menuBar().setVisible(False)
+        self.image_view.set_scroll_bars_visible(False)
         self.image_view.show_file_name(self.current_file_display_name())
         self.showFullScreen()
 
@@ -232,6 +233,7 @@ class ImageViewerMainWindow(QMainWindow):
         else:
             self.showNormal()
         self.menuBar().setVisible(True)
+        self.image_view.set_scroll_bars_visible(True)
         self.image_view.show_file_name(None)
 
     def keyPressEvent(self, event):

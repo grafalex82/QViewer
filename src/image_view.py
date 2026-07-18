@@ -37,6 +37,12 @@ class ImageView(QScrollArea):
         self.surface.show_file_name(file_name)
 
 
+    def set_scroll_bars_visible(self, visible):
+        policy = Qt.ScrollBarAsNeeded if visible else Qt.ScrollBarAlwaysOff
+        self.setHorizontalScrollBarPolicy(policy)
+        self.setVerticalScrollBarPolicy(policy)
+
+
     def load_image(self, image_path):
         if not image_path:
             self.pixmap = None
