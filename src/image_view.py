@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QPoint, QRect, Qt, pyqtSlot
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QFrame, QScrollArea
+from PyQt5.QtGui import QFontDatabase, QPixmap
+from PyQt5.QtWidgets import QFrame, QLabel, QScrollArea
 
 from image_surface import ImageSurface
 
@@ -27,6 +27,20 @@ class ImageView(QScrollArea):
         self.setWidgetResizable(True)
         self.setWidget(self.surface)
 
+        # Keep the full-screen file name outside the scrollable image surface so
+        # image zooming and panning cannot resize or reposition it.
+        self.file_name_label = QLabel(self.viewport())
+        self.file_name_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        file_name_font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
+        file_name_font.setPointSize(12)
+        file_name_font.setFixedPitch(True)
+        self.file_name_label.setFont(file_name_font)
+        self.file_name_label.setStyleSheet(
+            "background-color: black; color: #00ff00; padding-bottom: 2px;"
+        )
+        self.file_name_label.move(0, 0)
+        self.file_name_label.hide()
+
         self.surface.zoom_to_selection.connect(self.zoom_to_selection)
         self.surface.reset_zoom_signal.connect(self.reset_zoom)
         self.surface.pan_signal.connect(self.pan)
@@ -38,7 +52,11 @@ class ImageView(QScrollArea):
 
 
     def show_file_name(self, file_name):
-        self.surface.show_file_name(file_name)
+        self.file_name_label.setText(file_name or "")
+        self.file_name_label.adjustSize()
+        self.file_name_label.setVisible(bool(file_name))
+        if file_name:
+            self.file_name_label.raise_()
 
 
     def set_scroll_bars_visible(self, visible):

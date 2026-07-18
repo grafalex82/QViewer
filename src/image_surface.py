@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QPoint, QRect, Qt, pyqtSignal
-from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPen
+from PyQt5.QtGui import QPainter, QPen
 from PyQt5.QtWidgets import QLabel
 
 
@@ -19,7 +19,6 @@ class ImageSurface(QLabel):
         super().__init__()
 
         # Variables
-        self.file_name = None
         self.panning_enabled = False
         self.is_panning = False
         self.pan_position = QPoint()
@@ -30,12 +29,6 @@ class ImageSurface(QLabel):
         self.setMouseTracking(True)
 
         self.reset_selection()
-
-
-    def show_file_name(self, file_name):
-        self.file_name = file_name
-        self.update()
-
 
     def reset_selection(self):
         self.is_selecting = False
@@ -110,7 +103,7 @@ class ImageSurface(QLabel):
         # Draw image as usual
         super().paintEvent(event)
 
-        if not self.is_selecting and not self.file_name:
+        if not self.is_selecting:
             return
 
         painter = QPainter(self)
@@ -124,22 +117,3 @@ class ImageSurface(QLabel):
             painter.setPen(QPen(Qt.white, 1, Qt.DashLine))
             painter.drawRect(self.selection_rect)
             painter.restore()
-
-        # Draw file name
-        if self.file_name:
-            # Measure text size
-            painter.setFont(QFont("Arial", 12))
-            text_rect = painter.boundingRect(
-                0,
-                0,
-                self.width(),
-                self.height(),
-                Qt.TextSingleLine,
-                self.file_name,
-            )
-            painter.setBrush(QBrush(QColor("black")))
-            painter.drawRect(text_rect)
-
-            # Draw the text
-            painter.setPen(QColor("green"))
-            painter.drawText(text_rect, Qt.TextSingleLine, self.file_name)

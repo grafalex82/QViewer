@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from unittest.mock import Mock
 
@@ -47,6 +49,16 @@ def test_navigation_shortcuts_work_in_windowed_mode(window, app):
     assert not window.isFullScreen()
     assert window.menuBar().isVisible()
     exercise_navigation_shortcuts(window, app)
+
+
+def test_current_file_display_name_uses_full_path(window):
+    image_path = os.path.join("images", "image.jpg")
+    window.mgr.current_file = Mock(return_value=image_path)
+    window.mgr.current_file_position = Mock(return_value=(1, 2))
+
+    display_name = window.current_file_display_name()
+
+    assert display_name == f"{os.path.abspath(image_path)} (1/2)"
 
 
 def test_navigation_shortcuts_work_in_full_screen_mode(window, app):

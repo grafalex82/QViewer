@@ -134,9 +134,40 @@ def test_lasso_zoom_fills_full_screen_viewport(window, app):
     window.image_view.show_file_name("image.jpg (1/1)")
     app.processEvents()
     assert window.isFullScreen()
-    assert window.image_view.surface.file_name
+    assert window.image_view.file_name_label.isVisible()
 
     exercise_lasso_zoom(window, app)
+
+
+def test_full_screen_file_name_stays_fixed_when_image_is_zoomed(window, app):
+    window.show_full_screen()
+    view = window.image_view
+    view.show_file_name("image.jpg (1/1)")
+    prepare_wheel_zoom(view, app)
+    app.processEvents()
+
+    initial_geometry = view.file_name_label.geometry()
+    view.zoom_in()
+    view.zoom_in()
+    app.processEvents()
+    view.horizontalScrollBar().setValue(view.horizontalScrollBar().maximum())
+    view.verticalScrollBar().setValue(view.verticalScrollBar().maximum())
+    app.processEvents()
+
+    assert view.file_name_label.parent() is view.viewport()
+    assert view.file_name_label.geometry() == initial_geometry
+
+
+def test_full_screen_file_name_has_bright_green_text_and_bottom_padding(window):
+    style = window.image_view.file_name_label.styleSheet()
+
+    assert "color: #00ff00" in style
+    assert "padding-bottom: 2px" in style
+    assert "border:" not in style
+
+
+def test_full_screen_file_name_uses_fixed_width_font(window):
+    assert window.image_view.file_name_label.font().fixedPitch()
 
 
 @pytest.mark.parametrize(

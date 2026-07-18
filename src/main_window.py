@@ -153,8 +153,8 @@ class ImageViewerMainWindow(QMainWindow):
             return None
 
         position, total = self.mgr.current_file_position()
-        file_name = os.path.basename(image_path)
-        return f"{file_name} ({position}/{total})"
+        full_path = os.path.abspath(image_path)
+        return f"{full_path} ({position}/{total})"
 
     def load_image(self, image_path):
         display_name = self.current_file_display_name()
