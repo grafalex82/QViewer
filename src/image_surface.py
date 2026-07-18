@@ -84,19 +84,23 @@ class ImageSurface(QLabel):
         # Draw image as usual
         super().paintEvent(event)
 
+        if not self.is_selecting and not self.file_name:
+            return
+
+        painter = QPainter(self)
+
         # Draw zoom lasso
         if self.is_selecting:
-            painter = QPainter(self)
+            painter.save()
             painter.setCompositionMode(
                 QPainter.CompositionMode.RasterOp_SourceXorDestination
             )
             painter.setPen(QPen(Qt.white, 3, Qt.DashLine))
             painter.drawRect(self.selection_rect)
+            painter.restore()
 
         # Draw file name
         if self.file_name:
-            painter = QPainter(self)
-
             # Measure text size
             painter.setFont(QFont("Arial", 12))
             text_rect = painter.boundingRect(

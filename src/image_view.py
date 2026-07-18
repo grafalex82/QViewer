@@ -20,6 +20,7 @@ class ImageView(QScrollArea):
     def __init__(self):
         super().__init__()
 
+        self.pixmap = None
         self.surface = ImageSurface()
         self.setWidgetResizable(True)
         self.setWidget(self.surface)
@@ -91,12 +92,13 @@ class ImageView(QScrollArea):
         if not self.pixmap:
             return
 
+        viewport_size = self.viewport().size()
         if self.zoom_mode == self.ZOOM_FIT_TO_WINDOW and not self.zoom_changed:
-            factor_h = float(self.size().height()) / self.pixmap.size().height()
-            factor_w = float(self.size().width()) / self.pixmap.size().width()
+            factor_h = float(viewport_size.height()) / self.pixmap.size().height()
+            factor_w = float(viewport_size.width()) / self.pixmap.size().width()
             self.scale_factor = min(factor_h, factor_w)
             scaled_pixmap = self.pixmap.scaled(
-                self.size().shrunkBy(QMargins(1, 1, 1, 1)),
+                viewport_size.shrunkBy(QMargins(1, 1, 1, 1)),
                 Qt.KeepAspectRatio,
                 Qt.SmoothTransformation,
             )
@@ -113,8 +115,15 @@ class ImageView(QScrollArea):
 
     @pyqtSlot(QRect)
     def zoom_to_selection(self, rect):
-        print()
         rect = rect.normalized()
+        if not self.pixmap or rect.isEmpty():
+            return
+
+        viewport_size = self.viewport().size()
+        if viewport_size.isEmpty():
+            return
+
+        print()
         print(f"Zoom to selection: {rect}")
         print(f"Current scale factor: {self.scale_factor}")
         print(
@@ -131,8 +140,8 @@ class ImageView(QScrollArea):
         print(f"Scroll Bar: {sb.minimum()}/{sb.value()}/{sb.maximum()} ({sb.pageStep()})")
 
         # Calculate new scale factor
-        factor_h = float(rect.size().height()) / self.size().height()
-        factor_w = float(rect.size().width()) / self.size().width()
+        factor_h = float(rect.size().height()) / viewport_size.height()
+        factor_w = float(rect.size().width()) / viewport_size.width()
         extra_scale = max(factor_h, factor_w)
         self.scale_factor /= extra_scale
         self.zoom_changed = True
@@ -145,8 +154,8 @@ class ImageView(QScrollArea):
         print(f"New screen Size: {new_size}")
         new_center = center * self.scale_factor
         print(f"New center: {new_center}")
-        print(f"Screen size: {self.size()}")
-        size_diff = self.size() - new_size
+        print(f"Screen size: {viewport_size}")
+        size_diff = viewport_size - new_size
 
         x = (
             (center.x() - size.width() / 2) * self.scale_factor
