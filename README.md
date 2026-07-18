@@ -41,7 +41,7 @@ The implemented behavior and known gaps are listed below.
   - [x] Lasso zoom: drag a rectangle over the image, then click it to zoom.
   - [x] Unzoom with a Ctrl-mouse click
   - [x] Mouse-wheel zoom centred on the cursor.
-  - [ ] Pan a zoomed image by dragging.
+  - [x] Pan a zoomed image with Shift-mouse drag.
 - Review workflow
   - [ ] Mark or like good images.
   - [ ] Discard unwanted images.

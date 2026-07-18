@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QMargins, QRect, Qt, pyqtSlot
+from PyQt5.QtCore import QMargins, QPoint, QRect, Qt, pyqtSlot
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QScrollArea
 
@@ -28,6 +28,7 @@ class ImageView(QScrollArea):
 
         self.surface.zoom_to_selection.connect(self.zoom_to_selection)
         self.surface.reset_zoom_signal.connect(self.reset_zoom)
+        self.surface.pan_signal.connect(self.pan)
 
         # Flags and variables
         self.scale_factor = 1.0
@@ -150,6 +151,18 @@ class ImageView(QScrollArea):
         print(f"Scaled size: {scaled_pixmap.size()}")
         self.surface.setPixmap(scaled_pixmap)
         self.surface.adjustSize()
+        self.surface.set_panning_enabled(
+            scaled_pixmap.width() > viewport_size.width()
+            or scaled_pixmap.height() > viewport_size.height()
+        )
+
+
+    @pyqtSlot(QPoint)
+    def pan(self, delta):
+        horizontal_scroll_bar = self.horizontalScrollBar()
+        vertical_scroll_bar = self.verticalScrollBar()
+        horizontal_scroll_bar.setValue(horizontal_scroll_bar.value() - delta.x())
+        vertical_scroll_bar.setValue(vertical_scroll_bar.value() - delta.y())
 
 
     @pyqtSlot(QRect)

@@ -13,12 +13,16 @@ class ImageSurface(QLabel):
 
     zoom_to_selection_signal = pyqtSignal(QRect, name="zoom_to_selection")
     reset_zoom_signal = pyqtSignal(name="reset_zoom")
+    pan_signal = pyqtSignal(QPoint, name="pan")
 
     def __init__(self):
         super().__init__()
 
         # Variables
         self.file_name = None
+        self.panning_enabled = False
+        self.is_panning = False
+        self.pan_position = QPoint()
 
         # Adjust look
         self.setStyleSheet("background-color: black")
@@ -39,6 +43,12 @@ class ImageSurface(QLabel):
         self.selection_rect = QRect()
 
 
+    def set_panning_enabled(self, enabled):
+        self.panning_enabled = enabled
+        if not enabled:
+            self.is_panning = False
+
+
     def pixmap_rect(self):
         rect = self.pixmap().rect()
         rect.moveCenter(self.rect().center())
@@ -48,7 +58,11 @@ class ImageSurface(QLabel):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            if event.modifiers() & Qt.ControlModifier:
+            if self.panning_enabled and event.modifiers() & Qt.ShiftModifier:
+                self.is_panning = True
+                self.pan_position = event.globalPos()
+                self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            elif event.modifiers() & Qt.ControlModifier:
                 self.reset_selection()
                 self.reset_zoom_signal.emit()
             elif self.selection_rect.contains(event.pos()):
@@ -67,7 +81,11 @@ class ImageSurface(QLabel):
 
 
     def mouseMoveEvent(self, event):
-        if self.is_selecting:
+        if self.is_panning:
+            position = event.globalPos()
+            self.pan_signal.emit(position - self.pan_position)
+            self.pan_position = position
+        elif self.is_selecting:
             self.selection_rect = self.pixmap_rect().intersected(
                 QRect(self.selection_start, event.pos())
             )
@@ -80,8 +98,12 @@ class ImageSurface(QLabel):
 
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton and self.is_selecting:
-            self.is_selecting = False
+        if event.button() == Qt.LeftButton:
+            if self.is_panning:
+                self.is_panning = False
+                self.setCursor(Qt.CursorShape.ArrowCursor)
+            elif self.is_selecting:
+                self.is_selecting = False
 
 
     def paintEvent(self, event):
