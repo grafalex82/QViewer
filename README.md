@@ -28,8 +28,8 @@ The implemented behavior and known gaps are listed below.
   - [x] Show image at original (1:1) size.
   - [ ] Add viewer preferences.
 - Metadata
-  - [ ] Current file name in both windowed and full-screen mode
-  - [ ] Current file name index (e.g. image 5 of 10)
+  - [x] Current file name in both windowed and full-screen mode
+  - [x] Current file name index (e.g. image 5 of 10)
   - [ ] Show image metadata.
 - Navigation
   - [x] Move to the previous or next file in the current directory.
