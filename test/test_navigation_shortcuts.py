@@ -59,6 +59,31 @@ def test_navigation_shortcuts_work_in_full_screen_mode(window, app):
     exercise_navigation_shortcuts(window, app)
 
 
+def exercise_zoom_shortcuts(window, app):
+    window.image_view.scale_factor = 1.0
+
+    QTest.keyClick(window, Qt.Key_Plus)
+    app.processEvents()
+    assert window.image_view.scale_factor == pytest.approx(1.25)
+
+    QTest.keyClick(window, Qt.Key_Minus)
+    app.processEvents()
+    assert window.image_view.scale_factor == pytest.approx(1.0)
+
+
+def test_zoom_shortcuts_work_in_windowed_mode(window, app):
+    assert not window.isFullScreen()
+    exercise_zoom_shortcuts(window, app)
+
+
+def test_zoom_shortcuts_work_in_full_screen_mode(window, app):
+    window.show_full_screen()
+    app.processEvents()
+    assert window.isFullScreen()
+    assert not window.menuBar().isVisible()
+    exercise_zoom_shortcuts(window, app)
+
+
 def test_scroll_bars_are_restored_after_full_screen(window, app):
     window.show_full_screen()
     app.processEvents()

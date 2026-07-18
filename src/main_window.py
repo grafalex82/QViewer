@@ -121,11 +121,13 @@ class ImageViewerMainWindow(QMainWindow):
         zoom_in_action.setShortcut("+")
         zoom_in_action.triggered.connect(self.zoom_in)
         view_menu.addAction(zoom_in_action)
+        self.addAction(zoom_in_action)
 
         zoom_out_action = QAction("Zoom Out", self)
         zoom_out_action.setShortcut("-")
         zoom_out_action.triggered.connect(self.zoom_out)
         view_menu.addAction(zoom_out_action)
+        self.addAction(zoom_out_action)
 
     # File operations
 
