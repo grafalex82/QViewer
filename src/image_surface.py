@@ -121,7 +121,7 @@ class ImageSurface(QLabel):
             painter.setCompositionMode(
                 QPainter.CompositionMode.RasterOp_SourceXorDestination
             )
-            painter.setPen(QPen(Qt.white, 3, Qt.DashLine))
+            painter.setPen(QPen(Qt.white, 1, Qt.DashLine))
             painter.drawRect(self.selection_rect)
             painter.restore()
 
