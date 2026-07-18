@@ -130,10 +130,13 @@ test creation guidelines.
 ## Project layout
 
 ```text
-src/main.py       PyQt5 application, image display, zoom, and shortcuts
-src/file_mgr.py   Directory and image-navigation model
-test/             File-manager tests
-misc/             Development image assets and helpers
+src/main.py                      Application entry point
+src/main_window.py               Main window, menus, and shortcuts
+src/image_view.py                Image display and zoom behavior
+src/image_surface.py             Image painting and mouse selection
+src/file_mgr.py                  Directory and image-navigation model
+test/                            Automated tests
+misc/                            Development image assets and helpers
 ```
 
 ## Contributing

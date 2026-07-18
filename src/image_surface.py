@@ -1,0 +1,115 @@
+from PyQt5.QtCore import QPoint, QRect, Qt, pyqtSignal
+from PyQt5.QtGui import QBrush, QColor, QFont, QPainter, QPen
+from PyQt5.QtWidgets import QLabel
+
+
+class ImageSurface(QLabel):
+    """Paint the displayed image overlay and handle selection gestures.
+
+    The surface is the low-level presentation widget used by ``ImageView``.
+    It draws the optional file-name overlay, tracks rectangular mouse
+    selections, and emits a zoom request when the user activates a selection.
+    """
+
+    zoom_to_selection_signal = pyqtSignal(QRect, name="zoom_to_selection")
+
+    def __init__(self):
+        super().__init__()
+
+        # Variables
+        self.file_name = None
+
+        # Adjust look
+        self.setStyleSheet("background-color: black")
+        self.setAlignment(Qt.AlignCenter)
+        self.setMouseTracking(True)
+
+        self.reset_selection()
+
+
+    def show_file_name(self, file_name):
+        self.file_name = file_name
+        self.update()
+
+
+    def reset_selection(self):
+        self.is_selecting = False
+        self.selection_start = QPoint()
+        self.selection_rect = QRect()
+
+
+    def pixmap_rect(self):
+        rect = self.pixmap().rect()
+        rect.moveCenter(self.rect().center())
+        return rect
+
+    # Event handlers
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            if self.selection_rect.contains(event.pos()):
+                # Handle click in a selected area, to trigger zoom to selection
+
+                # First convert widget coordinates to image coordinates
+                tl = self.pixmap_rect().topLeft()
+                self.zoom_to_selection_signal.emit(self.selection_rect.translated(-tl))
+                self.selection_rect = QRect()
+            else:
+                # Nothing was selected earlier, then probably this is a new selection
+                self.is_selecting = True
+                self.selection_start = event.pos()
+
+            self.update()
+
+
+    def mouseMoveEvent(self, event):
+        if self.is_selecting:
+            self.selection_rect = self.pixmap_rect().intersected(
+                QRect(self.selection_start, event.pos())
+            )
+            self.update()
+        else:
+            if self.selection_rect.contains(event.pos()):
+                self.setCursor(Qt.CursorShape.PointingHandCursor)
+            else:
+                self.setCursor(Qt.CursorShape.ArrowCursor)
+
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton and self.is_selecting:
+            self.is_selecting = False
+
+
+    def paintEvent(self, event):
+        # Draw image as usual
+        super().paintEvent(event)
+
+        # Draw zoom lasso
+        if self.is_selecting:
+            painter = QPainter(self)
+            painter.setCompositionMode(
+                QPainter.CompositionMode.RasterOp_SourceXorDestination
+            )
+            painter.setPen(QPen(Qt.white, 3, Qt.DashLine))
+            painter.drawRect(self.selection_rect)
+
+        # Draw file name
+        if self.file_name:
+            painter = QPainter(self)
+
+            # Measure text size
+            painter.setFont(QFont("Arial", 12))
+            text_rect = painter.boundingRect(
+                0,
+                0,
+                self.width(),
+                self.height(),
+                Qt.TextSingleLine,
+                self.file_name,
+            )
+            painter.setBrush(QBrush(QColor("black")))
+            painter.drawRect(text_rect)
+
+            # Draw the text
+            painter.setPen(QColor("green"))
+            painter.drawText(text_rect, Qt.TextSingleLine, self.file_name)

@@ -1,6 +1,13 @@
 import os
 
 class FileMgr:
+    """Track the current directory and navigate its files and sibling folders.
+
+    This class provides the viewer's filesystem-navigation model. It loads a
+    file or directory, maintains the current file position, and exposes ordered
+    movement between files and adjacent directories without depending on Qt.
+    """
+
     def __init__(self):
         self.reset_current_dir()
 
