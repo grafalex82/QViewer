@@ -3,7 +3,7 @@ import os
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QAction, QFileDialog, QMainWindow
 
-from file_mgr import FileMgr
+from file_mgr import KEEP, REJECT, UNDECIDED, FileMgr
 from image_view import ImageView
 
 
@@ -154,15 +154,24 @@ class ImageViewerMainWindow(QMainWindow):
 
         position, total = self.mgr.current_file_position()
         full_path = os.path.abspath(image_path)
-        return f"{full_path} ({position}/{total})"
+        display_name = f"{full_path} ({position}/{total})"
+        state = self.mgr.get_current_review_state()
+        state_markers = {
+            KEEP: " [KEEP]",
+            REJECT: " [REJECT]",
+            UNDECIDED: "",
+        }
+        return display_name + state_markers[state]
 
-    def load_image(self, image_path):
+    def refresh_current_file_display(self):
         display_name = self.current_file_display_name()
         self.setWindowTitle(display_name or "")
 
         if self.isFullScreen():
             self.image_view.show_file_name(display_name)
 
+    def load_image(self, image_path):
+        self.refresh_current_file_display()
         self.image_view.load_image(image_path)
 
     # Actions
@@ -215,6 +224,14 @@ class ImageViewerMainWindow(QMainWindow):
         if self.mgr.next_dir():
             self.load_image(self.mgr.current_file())
 
+    def toggle_keep(self):
+        self.mgr.toggle_keep()
+        self.refresh_current_file_display()
+
+    def toggle_reject(self):
+        self.mgr.toggle_reject()
+        self.refresh_current_file_display()
+
     def toggle_full_screen(self):
         if self.isFullScreen():
             self.show_normal()
@@ -225,8 +242,8 @@ class ImageViewerMainWindow(QMainWindow):
     def show_full_screen(self):
         self.menuBar().setVisible(False)
         self.image_view.set_scroll_bars_visible(False)
-        self.image_view.show_file_name(self.current_file_display_name())
         self.showFullScreen()
+        self.refresh_current_file_display()
 
     def show_normal(self):
         if self.maximized:
@@ -248,6 +265,14 @@ class ImageViewerMainWindow(QMainWindow):
 
         if event.key() == Qt.Key_Return or event.key() == Qt.Key_F:
             self.toggle_full_screen()
+            return
+
+        if event.key() == Qt.Key_K:
+            self.toggle_keep()
+            return
+
+        if event.key() == Qt.Key_X:
+            self.toggle_reject()
             return
 
         super().keyPressEvent(event)

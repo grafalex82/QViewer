@@ -6,6 +6,8 @@ from unittest.mock import Mock
 from PyQt5.QtCore import Qt
 from PyQt5.QtTest import QTest
 
+from file_mgr import KEEP, REJECT, UNDECIDED
+
 
 def exercise_navigation_shortcuts(window, app):
     shortcuts = (
@@ -34,14 +36,91 @@ def test_navigation_shortcuts_work_in_windowed_mode(window, app):
     exercise_navigation_shortcuts(window, app)
 
 
-def test_current_file_display_name_uses_full_path(window):
+@pytest.mark.parametrize(
+    ("review_state", "marker"),
+    (
+        (KEEP, " [KEEP]"),
+        (REJECT, " [REJECT]"),
+        (UNDECIDED, ""),
+    ),
+)
+def test_current_file_display_name_uses_full_path_and_review_state(
+    window, review_state, marker
+):
     image_path = os.path.join("images", "image.jpg")
     window.mgr.current_file = Mock(return_value=image_path)
     window.mgr.current_file_position = Mock(return_value=(1, 2))
+    window.mgr.get_current_review_state = Mock(return_value=review_state)
 
     display_name = window.current_file_display_name()
 
-    assert display_name == f"{os.path.abspath(image_path)} (1/2)"
+    assert display_name == f"{os.path.abspath(image_path)} (1/2){marker}"
+
+
+@pytest.mark.parametrize(
+    ("review_state", "marker"),
+    (
+        (KEEP, " [KEEP]"),
+        (REJECT, " [REJECT]"),
+        (UNDECIDED, ""),
+    ),
+)
+def test_review_state_is_displayed_in_window_title(window, review_state, marker):
+    image_path = os.path.join("images", "image.jpg")
+    window.mgr.current_file = Mock(return_value=image_path)
+    window.mgr.current_file_position = Mock(return_value=(2, 10))
+    window.mgr.get_current_review_state = Mock(return_value=review_state)
+
+    window.refresh_current_file_display()
+
+    assert window.windowTitle() == f"{os.path.abspath(image_path)} (2/10){marker}"
+
+
+@pytest.mark.parametrize(
+    ("review_state", "marker"),
+    (
+        (KEEP, " [KEEP]"),
+        (REJECT, " [REJECT]"),
+        (UNDECIDED, ""),
+    ),
+)
+def test_review_state_is_displayed_in_full_screen_overlay(
+    window, app, review_state, marker
+):
+    image_path = os.path.join("images", "image.jpg")
+    window.mgr.current_file = Mock(return_value=image_path)
+    window.mgr.current_file_position = Mock(return_value=(2, 10))
+    window.mgr.get_current_review_state = Mock(return_value=review_state)
+
+    window.show_full_screen()
+    app.processEvents()
+
+    expected = f"{os.path.abspath(image_path)} (2/10){marker}"
+    assert window.windowTitle() == expected
+    assert window.image_view.file_name_label.text() == expected
+    assert window.image_view.file_name_label.isVisible()
+
+
+@pytest.mark.parametrize(
+    ("key", "toggle_method"),
+    (
+        (Qt.Key_K, "toggle_keep"),
+        (Qt.Key_X, "toggle_reject"),
+    ),
+)
+def test_review_shortcuts_refresh_display_without_reloading_image(
+    window, app, key, toggle_method
+):
+    setattr(window.mgr, toggle_method, Mock())
+    window.refresh_current_file_display = Mock()
+    window.load_image = Mock()
+
+    QTest.keyClick(window, key)
+    app.processEvents()
+
+    getattr(window.mgr, toggle_method).assert_called_once_with()
+    window.refresh_current_file_display.assert_called_once_with()
+    window.load_image.assert_not_called()
 
 
 def test_navigation_shortcuts_work_in_full_screen_mode(window, app):
