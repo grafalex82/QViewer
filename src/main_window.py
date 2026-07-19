@@ -129,6 +129,22 @@ class ImageViewerMainWindow(QMainWindow):
         view_menu.addAction(zoom_out_action)
         self.addAction(zoom_out_action)
 
+        # Create the Review menu. Register these actions on the main window as
+        # well so their shortcuts remain active while the menu bar is hidden.
+        review_menu = menu_bar.addMenu("Review")
+
+        self.toggle_keep_action = QAction("Toggle Keep", self)
+        self.toggle_keep_action.setShortcut("K")
+        self.toggle_keep_action.triggered.connect(self.toggle_keep)
+        review_menu.addAction(self.toggle_keep_action)
+        self.addAction(self.toggle_keep_action)
+
+        self.toggle_reject_action = QAction("Toggle Reject", self)
+        self.toggle_reject_action.setShortcut("X")
+        self.toggle_reject_action.triggered.connect(self.toggle_reject)
+        review_menu.addAction(self.toggle_reject_action)
+        self.addAction(self.toggle_reject_action)
+
     # File operations
 
     def open_file(self):
@@ -265,14 +281,6 @@ class ImageViewerMainWindow(QMainWindow):
 
         if event.key() == Qt.Key_Return or event.key() == Qt.Key_F:
             self.toggle_full_screen()
-            return
-
-        if event.key() == Qt.Key_K:
-            self.toggle_keep()
-            return
-
-        if event.key() == Qt.Key_X:
-            self.toggle_reject()
             return
 
         super().keyPressEvent(event)
