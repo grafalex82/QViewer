@@ -13,6 +13,8 @@ class FileMgr:
     movement between files and adjacent directories without depending on Qt.
     """
 
+    SUPPORTED_IMAGE_EXTENSIONS = frozenset((".png", ".jpg", ".jpeg"))
+
     def __init__(self):
         self.review_states = {}
         self.reset_current_dir()
@@ -55,6 +57,12 @@ class FileMgr:
         self.file_index = 0 if len(self.directory_files) else None
 
 
+    @classmethod
+    def is_supported_image(cls, path):
+        """Return whether *path* has an image extension managed by QViewer."""
+        return os.path.splitext(os.fspath(path))[1].lower() in cls.SUPPORTED_IMAGE_EXTENSIONS
+
+
     def list_dir(self, directory):
         files = []
         subdirs = []
@@ -62,7 +70,7 @@ class FileMgr:
             full_path = os.path.join(directory, entry)
             if os.path.isdir(full_path):
                 subdirs.append(entry)
-            else:
+            elif os.path.isfile(full_path) and self.is_supported_image(entry):
                 files.append(entry)
 
         files.sort()

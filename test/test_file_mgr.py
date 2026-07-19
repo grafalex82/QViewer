@@ -69,6 +69,35 @@ def test_empty_directory(mgr, testdir):
     assert mgr.current_file_position() == None
 
 
+def test_directory_manages_only_supported_direct_child_images(mgr, tmpdir):
+    for name in ("photo.jpg", "photo.JPEG", "photo.png"):
+        tmpdir.join(name).write("")
+    for name in ("notes.txt", "metadata.json"):
+        tmpdir.join(name).write("")
+    subdir = tmpdir.mkdir("nested")
+    subdir.join("nested.jpg").write("")
+    quarantine = tmpdir.mkdir("quarantine")
+    quarantine.join("discarded.jpg").write("")
+
+    mgr.load_directory(tmpdir)
+
+    assert mgr.directory_files == ["photo.JPEG", "photo.jpg", "photo.png"]
+    assert mgr.current_file_position() == (1, 3)
+
+
+@pytest.mark.parametrize(
+    "name",
+    ("photo.jpg", "photo.JPG", "photo.jpeg", "photo.JPEG", "photo.png", "photo.PNG"),
+)
+def test_supported_image_check_is_case_insensitive(name):
+    assert FileMgr.is_supported_image(name)
+
+
+@pytest.mark.parametrize("name", ("notes.txt", "metadata.json", "photo.jpg.tmp"))
+def test_supported_image_check_rejects_unsupported_extensions(name):
+    assert not FileMgr.is_supported_image(name)
+
+
 def test_load_file_arbitrary(mgr, testdir):
     fname = str(testdir.join("test2.jpg"))  # Not the first and not the last in the directory
     mgr.load_file(fname)
