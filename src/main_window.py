@@ -145,6 +145,24 @@ class ImageViewerMainWindow(QMainWindow):
         review_menu.addAction(self.toggle_reject_action)
         self.addAction(self.toggle_reject_action)
 
+        review_menu.addSeparator()
+
+        self.keep_and_next_action = QAction("Keep and Next", self)
+        self.keep_and_next_action.setShortcut("Ctrl+Up")
+        self.keep_and_next_action.triggered.connect(
+            lambda: self.set_review_state_and_next(KEEP)
+        )
+        review_menu.addAction(self.keep_and_next_action)
+        self.addAction(self.keep_and_next_action)
+
+        self.reject_and_next_action = QAction("Reject and Next", self)
+        self.reject_and_next_action.setShortcut("Ctrl+Down")
+        self.reject_and_next_action.triggered.connect(
+            lambda: self.set_review_state_and_next(REJECT)
+        )
+        review_menu.addAction(self.reject_and_next_action)
+        self.addAction(self.reject_and_next_action)
+
     # File operations
 
     def open_file(self):
@@ -247,6 +265,17 @@ class ImageViewerMainWindow(QMainWindow):
     def toggle_reject(self):
         self.mgr.toggle_reject()
         self.refresh_current_file_display()
+
+    def set_review_state_and_next(self, state):
+        if not self.mgr.current_file():
+            return
+
+        self.mgr.set_current_review_state(state)
+
+        if self.mgr.next():
+            self.load_image(self.mgr.current_file())
+        else:
+            self.refresh_current_file_display()
 
     def toggle_full_screen(self):
         if self.isFullScreen():

@@ -110,6 +110,8 @@ python src/main.py "C:\\Pictures"
 | Previous / next image | `Left` / `Right` |
 | First / last image | `Home` / `End` |
 | Previous / next sibling folder | `Ctrl+Left` / `Ctrl+Right` |
+| Toggle Keep / Reject | `K` / `X` |
+| Keep / Reject and advance | `Ctrl+Up` / `Ctrl+Down` |
 | Toggle full screen | `F` or `Enter` |
 | Exit full screen, then quit | `Esc` |
 | Zoom in / out | `+` / `-` |
