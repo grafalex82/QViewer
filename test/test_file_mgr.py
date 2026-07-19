@@ -1,5 +1,5 @@
 import pytest
-from file_mgr import FileMgr
+from file_mgr import KEEP, REJECT, UNDECIDED, FileMgr
 
 @pytest.fixture
 def mgr():
@@ -178,3 +178,81 @@ def test_prev_dir2(mgr, testdir):
     assert mgr.prev_dir() == True
     assert mgr.current_directory() == testdir.join("Sub1")
     assert mgr.current_file() == testdir.join("Sub1").join("test4.jpg")
+
+
+def test_newly_loaded_file_is_undecided(mgr, testdir):
+    fname = testdir.join("test1.jpg")
+    mgr.load_file(fname)
+
+    assert mgr.get_review_state(fname) == UNDECIDED
+    assert mgr.get_current_review_state() == UNDECIDED
+
+
+@pytest.mark.parametrize(
+    ("initial_state", "expected_state"),
+    [
+        (UNDECIDED, KEEP),
+        (KEEP, UNDECIDED),
+        (REJECT, KEEP),
+    ],
+)
+def test_toggle_keep_transitions(mgr, testdir, initial_state, expected_state):
+    mgr.load_file(testdir.join("test1.jpg"))
+    mgr.set_current_review_state(initial_state)
+
+    mgr.toggle_keep()
+
+    assert mgr.get_current_review_state() == expected_state
+
+
+@pytest.mark.parametrize(
+    ("initial_state", "expected_state"),
+    [
+        (UNDECIDED, REJECT),
+        (REJECT, UNDECIDED),
+        (KEEP, REJECT),
+    ],
+)
+def test_toggle_reject_transitions(mgr, testdir, initial_state, expected_state):
+    mgr.load_file(testdir.join("test1.jpg"))
+    mgr.set_current_review_state(initial_state)
+
+    mgr.toggle_reject()
+
+    assert mgr.get_current_review_state() == expected_state
+
+
+def test_review_state_is_keyed_by_full_path(mgr, tmpdir):
+    first = tmpdir.mkdir("first").join("same.jpg")
+    second = tmpdir.mkdir("second").join("same.jpg")
+    first.write("")
+    second.write("")
+
+    mgr.load_file(first)
+    mgr.set_current_review_state(KEEP)
+    mgr.load_file(second)
+    mgr.set_current_review_state(REJECT)
+
+    assert mgr.get_review_state(first) == KEEP
+    assert mgr.get_review_state(second) == REJECT
+
+
+def test_navigation_does_not_transfer_review_state(mgr, testdir):
+    mgr.load_file(testdir.join("test1.jpg"))
+    mgr.set_current_review_state(KEEP)
+
+    mgr.next()
+
+    assert mgr.get_current_review_state() == UNDECIDED
+    assert mgr.get_review_state(testdir.join("test1.jpg")) == KEEP
+
+
+def test_review_methods_are_no_ops_without_selected_file(mgr, testdir):
+    mgr.load_directory(testdir.join("Sub2Empty"))
+
+    mgr.set_current_review_state(KEEP)
+    mgr.toggle_keep()
+    mgr.toggle_reject()
+
+    assert mgr.get_current_review_state() == UNDECIDED
+    assert mgr.review_states == {}

@@ -1,5 +1,10 @@
 import os
 
+UNDECIDED = "undecided"
+KEEP = "keep"
+REJECT = "reject"
+
+
 class FileMgr:
     """Track the current directory and navigate its files and sibling folders.
 
@@ -9,6 +14,7 @@ class FileMgr:
     """
 
     def __init__(self):
+        self.review_states = {}
         self.reset_current_dir()
 
     def reset_current_dir(self):
@@ -80,6 +86,52 @@ class FileMgr:
 
     def current_directory(self):
         return self.directory
+
+
+    def get_review_state(self, fname):
+        """Return the review state for *fname*."""
+        if not fname:
+            return UNDECIDED
+
+        return self.review_states.get(os.path.realpath(fname), UNDECIDED)
+
+
+    def get_current_review_state(self):
+        """Return the selected file's review state."""
+        return self.get_review_state(self.current_file())
+
+
+    def set_current_review_state(self, state):
+        """Set the selected file's review state, if a file is selected."""
+        fname = self.current_file()
+        if fname is None:
+            return
+        if state not in (UNDECIDED, KEEP, REJECT):
+            raise ValueError(f"Unknown review state: {state}")
+
+        fname = os.path.realpath(fname)
+        if state == UNDECIDED:
+            self.review_states.pop(fname, None)
+        else:
+            self.review_states[fname] = state
+
+
+    def toggle_keep(self):
+        """Toggle Keep for the selected file."""
+        if self.current_file() is None:
+            return
+
+        state = self.get_current_review_state()
+        self.set_current_review_state(UNDECIDED if state == KEEP else KEEP)
+
+
+    def toggle_reject(self):
+        """Toggle Reject for the selected file."""
+        if self.current_file() is None:
+            return
+
+        state = self.get_current_review_state()
+        self.set_current_review_state(UNDECIDED if state == REJECT else REJECT)
 
 
     def prev(self, allow_prev_dir = False):
