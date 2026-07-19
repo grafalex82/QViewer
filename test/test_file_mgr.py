@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from file_mgr import KEEP, REJECT, UNDECIDED, FileMgr
 
@@ -285,3 +287,84 @@ def test_review_methods_are_no_ops_without_selected_file(mgr, testdir):
 
     assert mgr.get_current_review_state() == UNDECIDED
     assert mgr.review_states == {}
+
+
+def test_current_review_queries_return_matching_absolute_paths_in_navigation_order(mgr, tmpdir):
+    for name in ("c.jpg", "a.jpg", "b.jpg"):
+        tmpdir.join(name).write("")
+    mgr.load_directory(tmpdir)
+
+    mgr.load_file(tmpdir.join("a.jpg"))
+    mgr.set_current_review_state(REJECT)
+    mgr.load_file(tmpdir.join("b.jpg"))
+    mgr.set_current_review_state(KEEP)
+    mgr.load_file(tmpdir.join("c.jpg"))
+    mgr.set_current_review_state(REJECT)
+    selected_file = mgr.current_file()
+    review_states = mgr.review_states.copy()
+
+    assert mgr.current_rejected_files() == [
+        os.path.realpath(tmpdir.join("a.jpg")),
+        os.path.realpath(tmpdir.join("c.jpg")),
+    ]
+    assert mgr.current_files_with_states({KEEP}) == [
+        os.path.realpath(tmpdir.join("b.jpg"))
+    ]
+    assert mgr.current_review_counts() == {UNDECIDED: 0, KEEP: 1, REJECT: 2}
+    assert mgr.current_file() == selected_file
+    assert mgr.review_states == review_states
+
+
+def test_current_not_kept_includes_rejected_and_undecided_but_never_keep(mgr, tmpdir):
+    for name in ("keep.jpg", "reject.jpg", "undecided.jpg"):
+        tmpdir.join(name).write("")
+    mgr.load_directory(tmpdir)
+
+    mgr.load_file(tmpdir.join("keep.jpg"))
+    mgr.set_current_review_state(KEEP)
+    mgr.load_file(tmpdir.join("reject.jpg"))
+    mgr.set_current_review_state(REJECT)
+
+    assert mgr.current_not_kept_files() == [
+        os.path.realpath(tmpdir.join("reject.jpg")),
+        os.path.realpath(tmpdir.join("undecided.jpg")),
+    ]
+
+
+def test_current_review_queries_ignore_remembered_states_from_other_directory(mgr, tmpdir):
+    previous = tmpdir.mkdir("previous")
+    previous_file = previous.join("old.jpg")
+    previous_file.write("")
+    current = tmpdir.mkdir("current")
+    current_file = current.join("new.jpg")
+    current_file.write("")
+
+    mgr.load_file(previous_file)
+    mgr.set_current_review_state(REJECT)
+    mgr.load_directory(current)
+
+    assert mgr.current_rejected_files() == []
+    assert mgr.current_not_kept_files() == [os.path.realpath(current_file)]
+    assert mgr.current_review_counts() == {UNDECIDED: 1, KEEP: 0, REJECT: 0}
+
+
+def test_current_review_queries_are_empty_for_empty_directory(mgr, tmpdir):
+    mgr.load_directory(tmpdir)
+
+    assert mgr.current_files_with_states({UNDECIDED, KEEP, REJECT}) == []
+    assert mgr.current_rejected_files() == []
+    assert mgr.current_not_kept_files() == []
+    assert mgr.current_review_counts() == {UNDECIDED: 0, KEEP: 0, REJECT: 0}
+
+
+def test_current_review_queries_exclude_unsupported_files(mgr, tmpdir):
+    supported = tmpdir.join("photo.jpg")
+    unsupported = tmpdir.join("notes.txt")
+    supported.write("")
+    unsupported.write("")
+    mgr.load_directory(tmpdir)
+    mgr.review_states[os.path.realpath(unsupported)] = REJECT
+
+    assert mgr.current_rejected_files() == []
+    assert mgr.current_not_kept_files() == [os.path.realpath(supported)]
+    assert mgr.current_review_counts() == {UNDECIDED: 1, KEEP: 0, REJECT: 0}

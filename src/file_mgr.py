@@ -109,6 +109,41 @@ class FileMgr:
         return self.get_review_state(self.current_file())
 
 
+    def current_files_with_states(self, states):
+        """Return current-directory files whose review state is in *states*."""
+        if self.directory is None:
+            return []
+
+        matching_files = []
+        for fname in self.directory_files:
+            path = os.path.realpath(os.path.join(self.directory, fname))
+            if self.get_review_state(path) in states:
+                matching_files.append(path)
+        return matching_files
+
+
+    def current_rejected_files(self):
+        """Return rejected files in the current directory."""
+        return self.current_files_with_states({REJECT})
+
+
+    def current_not_kept_files(self):
+        """Return rejected and undecided files in the current directory."""
+        return self.current_files_with_states({REJECT, UNDECIDED})
+
+
+    def current_review_counts(self):
+        """Return review-state counts for files in the current directory."""
+        counts = {UNDECIDED: 0, KEEP: 0, REJECT: 0}
+        if self.directory is None:
+            return counts
+
+        for fname in self.directory_files:
+            path = os.path.realpath(os.path.join(self.directory, fname))
+            counts[self.get_review_state(path)] += 1
+        return counts
+
+
     def set_current_review_state(self, state):
         """Set the selected file's review state, if a file is selected."""
         fname = self.current_file()
