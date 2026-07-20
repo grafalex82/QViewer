@@ -21,6 +21,9 @@ class ImageViewerMainWindow(QMainWindow):
     between normal and full-screen viewing modes.
     """
 
+    MAX_REPORTED_DISCARD_FAILURES = 10
+    MAX_DISCARD_ERROR_LENGTH = 160
+
     def __init__(self, image_path=None):
         super().__init__()
 
@@ -353,18 +356,45 @@ class ImageViewerMainWindow(QMainWindow):
         dialog.exec_()
         return dialog.clickedButton() is continue_button
 
-    def report_discard_failures(self, operation_name, failures):
+    def report_discard_failures(self, operation_name, result):
         """Show the files that could not be moved by a bulk operation."""
-        if not failures:
+        if not result.failed:
             return
 
-        details = "\n".join(
-            f"{source}: {reason}" for source, reason in failures
-        )
+        visible_failures = result.failed[: self.MAX_REPORTED_DISCARD_FAILURES]
+        details = []
+        for source, reason in visible_failures:
+            concise_reason = str(reason).replace("\r", " ").replace("\n", " ")
+            if len(concise_reason) > self.MAX_DISCARD_ERROR_LENGTH:
+                concise_reason = (
+                    concise_reason[: self.MAX_DISCARD_ERROR_LENGTH - 3] + "..."
+                )
+            source_name = os.path.basename(os.fspath(source))
+            details.append(f"{source_name}: {concise_reason}")
+
+        omitted_count = len(result.failed) - len(visible_failures)
+        if omitted_count:
+            details.append(f"...and {omitted_count} more failure(s).")
+
+        moved_count = len(result.moved)
+        moved_word = "file" if moved_count == 1 else "files"
         QMessageBox.warning(
             self,
             f"{operation_name} - Move Failures",
-            f"Some images could not be moved:\n\n{details}",
+            f"Moved {moved_count} {moved_word} successfully.\n\n"
+            f"The following files could not be moved:\n\n"
+            + "\n".join(details),
+        )
+
+    def report_discard_success(self, operation_name, result):
+        """Report a completed bulk move in an information dialog."""
+        moved_count = len(result.moved)
+        moved_word = "file" if moved_count == 1 else "files"
+        QMessageBox.information(
+            self,
+            f"{operation_name} - Complete",
+            f"Moved {moved_count} {moved_word}.\n\n"
+            f"Quarantine session:\n{result.destination}",
         )
 
     def run_bulk_discard(
@@ -398,7 +428,10 @@ class ImageViewerMainWindow(QMainWindow):
 
         result = self.mgr.move_to_discard_directory(candidates)
         self.load_image(self.mgr.current_file())
-        self.report_discard_failures(operation_name, result.failed)
+        if result.failed:
+            self.report_discard_failures(operation_name, result)
+        else:
+            self.report_discard_success(operation_name, result)
         return result
 
     def discard_rejected(self):

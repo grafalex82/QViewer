@@ -9,6 +9,12 @@ from PyQt5.QtWidgets import QMessageBox
 from file_mgr import DISCARD_DIRECTORY_NAME, DiscardResult, KEEP, REJECT
 
 
+@pytest.fixture(autouse=True)
+def dismiss_information_dialogs(monkeypatch):
+    """Keep completion dialogs from blocking automated UI tests."""
+    monkeypatch.setattr(QMessageBox, "information", lambda *args: None)
+
+
 @pytest.fixture
 def reviewed_window(window, tmpdir):
     paths = [tmpdir.join(name) for name in ("keep.jpg", "reject.jpg", "other.jpg")]
@@ -42,6 +48,9 @@ def test_discard_rejected_cancel_does_not_move_or_create_directory(
 def test_discard_rejected_continue_moves_only_rejected(reviewed_window, monkeypatch):
     window, paths = reviewed_window
     monkeypatch.setattr(window, "confirm_bulk_discard", lambda *args: True)
+    dialogs = []
+    monkeypatch.setattr(QMessageBox, "information", lambda *args: dialogs.append(args))
+    monkeypatch.setattr(QMessageBox, "warning", lambda *args: dialogs.append(args))
 
     result = window.discard_rejected()
 
@@ -49,6 +58,10 @@ def test_discard_rejected_continue_moves_only_rejected(reviewed_window, monkeypa
     assert paths[0].exists()
     assert not paths[1].exists()
     assert paths[2].exists()
+    assert len(dialogs) == 1
+    assert dialogs[0][1] == "Discard Rejected - Complete"
+    assert "Moved 1 file" in dialogs[0][2]
+    assert result.destination in dialogs[0][2]
 
 
 def test_discard_rejected_with_no_reject_reports_and_creates_nothing(
@@ -235,8 +248,53 @@ def test_bulk_discard_reports_move_failures(reviewed_window, monkeypatch):
     result = window.discard_rejected()
 
     assert result.failed == [failure]
-    assert str(paths[1]) in warnings[0][2]
+    assert os.path.basename(str(paths[1])) in warnings[0][2]
+    assert os.path.dirname(str(paths[1])) not in warnings[0][2]
     assert "simulated failure" in warnings[0][2]
+    assert "Moved 0 files successfully" in warnings[0][2]
+
+
+def test_partial_discard_reports_successful_moves_and_refreshes_display(
+    reviewed_window, monkeypatch
+):
+    window, paths = reviewed_window
+    moved = os.path.realpath(str(paths[1]))
+    failed = os.path.realpath(str(paths[2]))
+    result = DiscardResult(
+        destination=str(paths[0].dirpath(DISCARD_DIRECTORY_NAME).join("session")),
+        moved=[moved],
+        failed=[(failed, "access denied")],
+    )
+    window.mgr.load_file(str(paths[1]))
+    monkeypatch.setattr(window, "confirm_bulk_discard", lambda *args: True)
+    monkeypatch.setattr(window.mgr, "current_rejected_files", lambda: [moved, failed])
+    monkeypatch.setattr(window.mgr, "move_to_discard_directory", lambda _: result)
+    load_image = Mock(wraps=window.load_image)
+    monkeypatch.setattr(window, "load_image", load_image)
+    warnings = []
+    monkeypatch.setattr(QMessageBox, "warning", lambda *args: warnings.append(args))
+
+    returned = window.discard_rejected()
+
+    assert returned is result
+    load_image.assert_called_once_with(window.mgr.current_file())
+    assert "Moved 1 file successfully" in warnings[0][2]
+    assert "other.jpg: access denied" in warnings[0][2]
+
+
+def test_discard_clears_image_when_no_images_remain(window, tmpdir, monkeypatch):
+    image = tmpdir.join("only.jpg")
+    image.write("")
+    window.mgr.load_file(str(image))
+    window.mgr.set_current_review_state(REJECT)
+    monkeypatch.setattr(window, "confirm_bulk_discard", lambda *args: True)
+    load_image = Mock(wraps=window.load_image)
+    monkeypatch.setattr(window, "load_image", load_image)
+
+    window.discard_rejected()
+
+    load_image.assert_called_once_with(None)
+    assert window.image_view.pixmap is None
 
 
 def test_zero_candidates_reports_nothing_without_confirmation(
