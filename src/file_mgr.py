@@ -1,10 +1,24 @@
 import os
+from dataclasses import dataclass, field
 from datetime import datetime
 
 UNDECIDED = "undecided"
 KEEP = "keep"
 REJECT = "reject"
 DISCARD_DIRECTORY_NAME = ".qviewer-discarded"
+
+
+@dataclass
+class DiscardResult:
+    """Result of moving files into a quarantine session directory.
+
+    ``moved`` contains the original source paths that were moved. Their new
+    locations are ``destination`` joined with each source basename.
+    """
+
+    destination: str | None = None
+    moved: list[str] = field(default_factory=list)
+    failed: list[tuple[str, str]] = field(default_factory=list)
 
 
 class FileMgr:
@@ -171,6 +185,103 @@ class FileMgr:
                 return session_directory
             except FileExistsError:
                 suffix += 1
+
+
+    def move_to_discard_directory(self, file_paths):
+        """Move managed current-directory images into a new quarantine session.
+
+        Invalid paths and individual rename failures are reported in the
+        returned result. Processing continues after each failure, and the
+        manager's directory listing is refreshed only after every move has
+        been attempted.
+        """
+        result = DiscardResult()
+        if not file_paths or self.directory is None:
+            return result
+
+        directory = os.path.realpath(self.directory)
+        discard_root = os.path.realpath(
+            os.path.join(directory, DISCARD_DIRECTORY_NAME)
+        )
+        managed_files = set(self.directory_files)
+        candidates = []
+
+        for supplied_path in file_paths:
+            try:
+                source = os.fspath(supplied_path)
+            except TypeError as error:
+                result.failed.append((str(supplied_path), str(error)))
+                continue
+
+            source = os.path.realpath(source)
+            try:
+                is_in_discard = (
+                    os.path.commonpath((source, discard_root)) == discard_root
+                )
+            except ValueError:
+                is_in_discard = False
+
+            if is_in_discard:
+                result.failed.append(
+                    (source, "Path is already inside the quarantine directory")
+                )
+            elif os.path.isdir(source):
+                result.failed.append((source, "Path is a directory, not an image file"))
+            elif os.path.normcase(os.path.dirname(source)) != os.path.normcase(directory):
+                result.failed.append((source, "Path is outside the current directory"))
+            elif (
+                os.path.basename(source) not in managed_files
+                or not self.is_supported_image(source)
+                or not os.path.isfile(source)
+            ):
+                result.failed.append((source, "Path is not a managed current-directory image"))
+            else:
+                candidates.append(source)
+
+        if not candidates:
+            return result
+
+        try:
+            result.destination = self.create_discard_directory(candidates)
+        except OSError as error:
+            result.failed.extend((source, str(error)) for source in candidates)
+            return result
+
+        destinations = set()
+        moves = []
+        for source in candidates:
+            destination = os.path.join(result.destination, os.path.basename(source))
+            normalized_destination = os.path.normcase(os.path.realpath(destination))
+            if os.path.exists(destination) or normalized_destination in destinations:
+                result.failed.append((source, "Destination file already exists"))
+            else:
+                destinations.add(normalized_destination)
+                moves.append((source, destination))
+
+        old_index = self.file_index
+        current_basename = (
+            self.directory_files[old_index]
+            if old_index is not None and old_index < len(self.directory_files)
+            else None
+        )
+        for source, destination in moves:
+            try:
+                os.rename(source, destination)
+                result.moved.append(source)
+            except OSError as error:
+                result.failed.append((source, str(error)))
+
+        self.directory_files, self.directory_subdirs = self.list_dir(self.directory)
+        if not self.directory_files:
+            self.file_index = None
+        elif current_basename in self.directory_files:
+            self.file_index = self.directory_files.index(current_basename)
+        elif old_index is None:
+            self.file_index = 0
+        else:
+            self.file_index = min(old_index, len(self.directory_files) - 1)
+
+        return result
 
 
     def set_current_review_state(self, state):

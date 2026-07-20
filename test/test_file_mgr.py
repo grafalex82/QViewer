@@ -3,7 +3,14 @@ from datetime import datetime
 
 import pytest
 import file_mgr
-from file_mgr import DISCARD_DIRECTORY_NAME, KEEP, REJECT, UNDECIDED, FileMgr
+from file_mgr import (
+    DISCARD_DIRECTORY_NAME,
+    KEEP,
+    REJECT,
+    UNDECIDED,
+    DiscardResult,
+    FileMgr,
+)
 
 
 class FixedDatetime:
@@ -430,3 +437,110 @@ def test_discard_root_is_excluded_from_non_recursive_subdirectories(mgr, tmpdir)
 
     assert mgr.directory_files == []
     assert mgr.directory_subdirs == ["album"]
+
+
+def test_move_to_discard_moves_only_selected_files_and_retains_basenames(mgr, tmpdir):
+    selected = [tmpdir.join("one.jpg"), tmpdir.join("two.png")]
+    untouched = tmpdir.join("three.jpeg")
+    for path in selected + [untouched]:
+        path.write(path.basename)
+    mgr.load_directory(tmpdir)
+
+    result = mgr.move_to_discard_directory(selected)
+
+    assert isinstance(result, DiscardResult)
+    assert result.failed == []
+    assert [os.path.basename(path) for path in result.moved] == ["one.jpg", "two.png"]
+    moved_destinations = [
+        os.path.join(result.destination, os.path.basename(path)) for path in result.moved
+    ]
+    assert [open(path).read() for path in moved_destinations] == ["one.jpg", "two.png"]
+    assert untouched.isfile()
+    assert not selected[0].exists()
+    assert not selected[1].exists()
+    assert mgr.directory_files == ["three.jpeg"]
+
+
+def test_move_to_discard_rejects_path_outside_current_directory(mgr, tmpdir):
+    current = tmpdir.mkdir("current")
+    current.join("inside.jpg").write("")
+    outside = tmpdir.join("outside.jpg")
+    outside.write("")
+    mgr.load_directory(current)
+
+    result = mgr.move_to_discard_directory([outside])
+
+    assert result.destination is None
+    assert result.moved == []
+    assert result.failed[0][0] == os.path.realpath(outside)
+    assert "outside" in result.failed[0][1].lower()
+    assert outside.isfile()
+
+
+def test_move_to_discard_rejects_unsupported_file(mgr, tmpdir):
+    unsupported = tmpdir.join("notes.txt")
+    unsupported.write("")
+    mgr.load_directory(tmpdir)
+
+    result = mgr.move_to_discard_directory([unsupported])
+
+    assert result.destination is None
+    assert result.moved == []
+    assert "managed" in result.failed[0][1].lower()
+    assert unsupported.isfile()
+
+
+def test_move_to_discard_empty_list_creates_no_directory(mgr, tmpdir):
+    tmpdir.join("photo.jpg").write("")
+    mgr.load_directory(tmpdir)
+
+    result = mgr.move_to_discard_directory([])
+
+    assert result == DiscardResult()
+    assert not tmpdir.join(DISCARD_DIRECTORY_NAME).exists()
+
+
+def test_move_to_discard_continues_after_individual_rename_failure(
+    mgr, tmpdir, monkeypatch
+):
+    failing = tmpdir.join("fail.jpg")
+    succeeding = tmpdir.join("succeed.jpg")
+    failing.write("")
+    succeeding.write("")
+    mgr.load_directory(tmpdir)
+    real_rename = os.rename
+
+    def selective_rename(source, destination):
+        if source == os.path.realpath(failing):
+            raise OSError("simulated move failure")
+        real_rename(source, destination)
+
+    monkeypatch.setattr(file_mgr.os, "rename", selective_rename)
+
+    result = mgr.move_to_discard_directory([failing, succeeding])
+
+    assert [os.path.basename(path) for path in result.moved] == ["succeed.jpg"]
+    assert result.failed == [(os.path.realpath(failing), "simulated move failure")]
+    assert failing.isfile()
+    assert not succeeding.exists()
+    assert mgr.directory_files == ["fail.jpg"]
+
+
+def test_move_to_discard_never_overwrites_existing_destination(
+    mgr, tmpdir, monkeypatch
+):
+    source = tmpdir.join("photo.jpg")
+    source.write("source")
+    mgr.load_directory(tmpdir)
+    session = tmpdir.mkdir(DISCARD_DIRECTORY_NAME).mkdir("existing-session")
+    destination = session.join("photo.jpg")
+    destination.write("existing")
+    monkeypatch.setattr(mgr, "create_discard_directory", lambda targets: str(session))
+
+    result = mgr.move_to_discard_directory([source])
+
+    assert result.destination == str(session)
+    assert result.moved == []
+    assert "already exists" in result.failed[0][1].lower()
+    assert source.read() == "source"
+    assert destination.read() == "existing"
