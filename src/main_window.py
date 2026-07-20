@@ -1,9 +1,15 @@
 import os
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAction, QFileDialog, QMainWindow
+from PyQt5.QtWidgets import QAction, QFileDialog, QMainWindow, QMessageBox
 
-from file_mgr import KEEP, REJECT, UNDECIDED, FileMgr
+from file_mgr import (
+    DISCARD_DIRECTORY_NAME,
+    KEEP,
+    REJECT,
+    UNDECIDED,
+    FileMgr,
+)
 from image_view import ImageView
 
 
@@ -163,6 +169,16 @@ class ImageViewerMainWindow(QMainWindow):
         review_menu.addAction(self.reject_and_next_action)
         self.addAction(self.reject_and_next_action)
 
+        review_menu.addSeparator()
+
+        self.discard_rejected_action = QAction("Discard Rejected...", self)
+        self.discard_rejected_action.triggered.connect(self.discard_rejected)
+        review_menu.addAction(self.discard_rejected_action)
+
+        self.keep_only_marked_action = QAction("Keep Only Marked...", self)
+        self.keep_only_marked_action.triggered.connect(self.keep_only_marked)
+        review_menu.addAction(self.keep_only_marked_action)
+
     # File operations
 
     def open_file(self):
@@ -276,6 +292,98 @@ class ImageViewerMainWindow(QMainWindow):
             self.load_image(self.mgr.current_file())
         else:
             self.refresh_current_file_display()
+
+    def confirm_bulk_discard(
+        self,
+        operation_name,
+        keep_count,
+        reject_count,
+        undecided_count,
+        move_count,
+        current_directory,
+        proposed_quarantine_location,
+    ):
+        """Ask whether a bulk move into the quarantine folder should proceed."""
+        if move_count == 0:
+            QMessageBox.information(
+                self,
+                operation_name,
+                "There is nothing to discard.",
+            )
+            return False
+
+        image_word = "image" if move_count == 1 else "images"
+        if operation_name == "Keep Only Marked":
+            kept_word = "image" if keep_count == 1 else "images"
+            question = f"Keep only the {keep_count} {kept_word} marked Keep?"
+            moved_description = f"{move_count} {image_word} not marked Keep"
+        else:
+            question = (
+                f"Move {move_count} rejected {image_word} out of the current folder?"
+            )
+            moved_description = f"The {move_count} rejected {image_word}"
+
+        warning = ""
+        if operation_name == "Keep Only Marked" and keep_count == 0:
+            warning = (
+                "WARNING: No images are marked Keep. Every managed image in the "
+                "current directory will be moved.\n\n"
+            )
+
+        message = (
+            f"{question}\n\n"
+            f"Kept: {keep_count}\n"
+            f"Rejected: {reject_count}\n"
+            f"Undecided: {undecided_count}\n\n"
+            f"{warning}"
+            f"{moved_description} will be moved into:\n"
+            f"{proposed_quarantine_location}"
+        )
+        dialog = QMessageBox(self)
+        dialog.setIcon(QMessageBox.Warning)
+        dialog.setWindowTitle(operation_name)
+        dialog.setText(message)
+        continue_button = dialog.addButton("Continue", QMessageBox.AcceptRole)
+        cancel_button = dialog.addButton(QMessageBox.Cancel)
+        dialog.setDefaultButton(cancel_button)
+        dialog.exec_()
+        return dialog.clickedButton() is continue_button
+
+    def run_bulk_discard(self, operation_name, candidates):
+        """Confirm and run a bulk discard operation for *candidates*."""
+        counts = self.mgr.current_review_counts()
+        directory = self.mgr.current_directory()
+        quarantine = (
+            os.path.join(directory, DISCARD_DIRECTORY_NAME) + os.sep
+            if directory is not None
+            else DISCARD_DIRECTORY_NAME + os.sep
+        )
+        if not self.confirm_bulk_discard(
+            operation_name,
+            counts[KEEP],
+            counts[REJECT],
+            counts[UNDECIDED],
+            len(candidates),
+            directory,
+            quarantine,
+        ):
+            return None
+
+        result = self.mgr.move_to_discard_directory(candidates)
+        self.load_image(self.mgr.current_file())
+        return result
+
+    def discard_rejected(self):
+        """Move rejected images in the current directory after confirmation."""
+        return self.run_bulk_discard(
+            "Discard Rejected", self.mgr.current_rejected_files()
+        )
+
+    def keep_only_marked(self):
+        """Move rejected and undecided images after confirmation."""
+        return self.run_bulk_discard(
+            "Keep Only Marked", self.mgr.current_not_kept_files()
+        )
 
     def toggle_full_screen(self):
         if self.isFullScreen():
