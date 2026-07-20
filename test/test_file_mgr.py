@@ -1,7 +1,17 @@
 import os
+from datetime import datetime
 
 import pytest
-from file_mgr import KEEP, REJECT, UNDECIDED, FileMgr
+import file_mgr
+from file_mgr import DISCARD_DIRECTORY_NAME, KEEP, REJECT, UNDECIDED, FileMgr
+
+
+class FixedDatetime:
+    value = None
+
+    @classmethod
+    def now(cls):
+        return cls.value
 
 @pytest.fixture
 def mgr():
@@ -368,3 +378,55 @@ def test_current_review_queries_exclude_unsupported_files(mgr, tmpdir):
     assert mgr.current_rejected_files() == []
     assert mgr.current_not_kept_files() == [os.path.realpath(supported)]
     assert mgr.current_review_counts() == {UNDECIDED: 1, KEEP: 0, REJECT: 0}
+
+
+def test_create_discard_directory_creates_timestamped_session(mgr, tmpdir, monkeypatch):
+    tmpdir.join("photo.jpg").write("")
+    mgr.load_directory(tmpdir)
+    FixedDatetime.value = datetime(2026, 7, 19, 14, 5, 9)
+    monkeypatch.setattr(file_mgr, "datetime", FixedDatetime)
+
+    result = mgr.create_discard_directory()
+
+    expected = tmpdir.join(DISCARD_DIRECTORY_NAME).join("20260719-140509")
+    assert result == str(expected)
+    assert expected.isdir()
+    assert tmpdir.join("photo.jpg").isfile()
+
+
+def test_create_discard_directory_uses_suffix_on_timestamp_collision(
+    mgr, tmpdir, monkeypatch
+):
+    tmpdir.join("photo.jpg").write("")
+    mgr.load_directory(tmpdir)
+    FixedDatetime.value = datetime(2026, 7, 19, 14, 5, 9)
+    monkeypatch.setattr(file_mgr, "datetime", FixedDatetime)
+
+    first = mgr.create_discard_directory()
+    existing_file = os.path.join(first, "existing.jpg")
+    with open(existing_file, "w"):
+        pass
+    second = mgr.create_discard_directory()
+
+    assert first != second
+    assert second == str(
+        tmpdir.join(DISCARD_DIRECTORY_NAME).join("20260719-140509-1")
+    )
+    assert os.path.isfile(existing_file)
+
+
+def test_create_discard_directory_does_nothing_for_empty_targets(mgr, tmpdir):
+    mgr.load_directory(tmpdir)
+
+    assert mgr.create_discard_directory([]) is None
+    assert not tmpdir.join(DISCARD_DIRECTORY_NAME).exists()
+
+
+def test_discard_root_is_excluded_from_non_recursive_subdirectories(mgr, tmpdir):
+    tmpdir.mkdir(DISCARD_DIRECTORY_NAME).join("discarded.jpg").write("")
+    tmpdir.mkdir("album")
+
+    mgr.load_directory(tmpdir)
+
+    assert mgr.directory_files == []
+    assert mgr.directory_subdirs == ["album"]

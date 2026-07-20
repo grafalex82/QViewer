@@ -1,8 +1,10 @@
 import os
+from datetime import datetime
 
 UNDECIDED = "undecided"
 KEEP = "keep"
 REJECT = "reject"
+DISCARD_DIRECTORY_NAME = ".qviewer-discarded"
 
 
 class FileMgr:
@@ -68,7 +70,7 @@ class FileMgr:
         subdirs = []
         for entry in os.listdir(directory):
             full_path = os.path.join(directory, entry)
-            if os.path.isdir(full_path):
+            if os.path.isdir(full_path) and entry != DISCARD_DIRECTORY_NAME:
                 subdirs.append(entry)
             elif os.path.isfile(full_path) and self.is_supported_image(entry):
                 files.append(entry)
@@ -142,6 +144,33 @@ class FileMgr:
             path = os.path.realpath(os.path.join(self.directory, fname))
             counts[self.get_review_state(path)] += 1
         return counts
+
+
+    def create_discard_directory(self, target_files=None):
+        """Create and return a unique quarantine directory for *target_files*.
+
+        When *target_files* is omitted, the currently loaded image list is used
+        to decide whether there is any work to do. No directory is created for
+        an empty target list.
+        """
+        if target_files is None:
+            target_files = self.directory_files
+        if not target_files or self.directory is None:
+            return None
+
+        discard_root = os.path.join(self.directory, DISCARD_DIRECTORY_NAME)
+        os.makedirs(discard_root, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        suffix = 0
+        while True:
+            session_name = timestamp if suffix == 0 else f"{timestamp}-{suffix}"
+            session_directory = os.path.join(discard_root, session_name)
+            try:
+                os.mkdir(session_directory)
+                return session_directory
+            except FileExistsError:
+                suffix += 1
 
 
     def set_current_review_state(self, state):
