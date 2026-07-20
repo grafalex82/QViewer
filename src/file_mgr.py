@@ -195,10 +195,13 @@ class FileMgr:
         manager's directory listing is refreshed only after every move has
         been attempted.
         """
+        # Return an empty result when there is no loaded directory or no work.
         result = DiscardResult()
         if not file_paths or self.directory is None:
             return result
 
+        # Resolve the current and quarantine directories, and snapshot the
+        # filenames that this manager is allowed to move.
         directory = os.path.realpath(self.directory)
         discard_root = os.path.realpath(
             os.path.join(directory, DISCARD_DIRECTORY_NAME)
@@ -206,6 +209,8 @@ class FileMgr:
         managed_files = set(self.directory_files)
         candidates = []
 
+        # Validate each supplied path independently so invalid inputs are
+        # reported without preventing valid files from being processed.
         for supplied_path in file_paths:
             try:
                 source = os.fspath(supplied_path)
@@ -238,15 +243,20 @@ class FileMgr:
             else:
                 candidates.append(source)
 
+        # Avoid creating an empty quarantine session when every input failed
+        # validation.
         if not candidates:
             return result
 
+        # Create one quarantine session for all validated source files, or
+        # report directory-creation failure against every candidate.
         try:
             result.destination = self.create_discard_directory(candidates)
         except OSError as error:
             result.failed.extend((source, str(error)) for source in candidates)
             return result
 
+        # Build a collision-free move plan before changing the filesystem.
         destinations = set()
         moves = []
         for source in candidates:
@@ -258,12 +268,15 @@ class FileMgr:
                 destinations.add(normalized_destination)
                 moves.append((source, destination))
 
+        # Capture the selection before moving files so it can be restored or
+        # replaced by the nearest survivor after the directory refresh.
         old_index = self.file_index
-        current_basename = (
-            self.directory_files[old_index]
-            if old_index is not None and old_index < len(self.directory_files)
-            else None
-        )
+        current_path = self.current_file()
+        if current_path is not None:
+            current_path = os.path.realpath(current_path)
+
+        # Attempt every planned move and retain per-file failures in the
+        # result instead of aborting the remaining moves.
         for source, destination in moves:
             try:
                 os.rename(source, destination)
@@ -271,10 +284,17 @@ class FileMgr:
             except OSError as error:
                 result.failed.append((source, str(error)))
 
+        # Forget review states only for sources that actually moved.
+        for source in result.moved:
+            self.review_states.pop(source, None)
+
+        # Refresh the directory and preserve the current image when possible;
+        # otherwise select the old index clamped to the remaining files.
         self.directory_files, self.directory_subdirs = self.list_dir(self.directory)
         if not self.directory_files:
             self.file_index = None
-        elif current_basename in self.directory_files:
+        elif current_path is not None and current_path not in result.moved:
+            current_basename = os.path.basename(current_path)
             self.file_index = self.directory_files.index(current_basename)
         elif old_index is None:
             self.file_index = 0

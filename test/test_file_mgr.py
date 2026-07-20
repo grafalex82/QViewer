@@ -526,6 +526,94 @@ def test_move_to_discard_continues_after_individual_rename_failure(
     assert mgr.directory_files == ["fail.jpg"]
 
 
+def test_move_to_discard_preserves_surviving_current_image(mgr, tmpdir):
+    for name in ("a.jpg", "b.jpg", "c.jpg", "d.jpg"):
+        tmpdir.join(name).write("")
+    current = tmpdir.join("c.jpg")
+    mgr.load_file(current)
+
+    mgr.move_to_discard_directory([tmpdir.join("a.jpg"), tmpdir.join("d.jpg")])
+
+    assert mgr.current_file() == current
+    assert mgr.current_file_position() == (2, 2)
+
+
+def test_move_to_discard_selects_survivor_at_previous_index(mgr, tmpdir):
+    for name in ("a.jpg", "b.jpg", "c.jpg", "d.jpg", "e.jpg"):
+        tmpdir.join(name).write("")
+    mgr.load_file(tmpdir.join("d.jpg"))
+
+    mgr.move_to_discard_directory([tmpdir.join("b.jpg"), tmpdir.join("d.jpg")])
+
+    assert mgr.current_file() == tmpdir.join("e.jpg")
+    assert mgr.current_file_position() == (3, 3)
+
+
+def test_move_to_discard_selects_new_last_image_when_current_was_last(mgr, tmpdir):
+    for name in ("a.jpg", "b.jpg", "c.jpg"):
+        tmpdir.join(name).write("")
+    mgr.load_file(tmpdir.join("c.jpg"))
+
+    mgr.move_to_discard_directory([tmpdir.join("c.jpg")])
+
+    assert mgr.current_file() == tmpdir.join("b.jpg")
+    assert mgr.current_file_position() == (2, 2)
+
+
+def test_move_to_discard_clears_current_file_when_every_image_moves(mgr, tmpdir):
+    images = [tmpdir.join("a.jpg"), tmpdir.join("b.jpg")]
+    for image in images:
+        image.write("")
+    mgr.load_file(images[1])
+
+    mgr.move_to_discard_directory(images)
+
+    assert mgr.directory_files == []
+    assert mgr.file_index is None
+    assert mgr.current_file() is None
+
+
+def test_failed_move_remains_selectable_and_keeps_review_state(
+    mgr, tmpdir, monkeypatch
+):
+    failing = tmpdir.join("b.jpg")
+    succeeding = tmpdir.join("a.jpg")
+    failing.write("")
+    succeeding.write("")
+    mgr.load_file(failing)
+    mgr.set_current_review_state(REJECT)
+    real_rename = os.rename
+
+    def selective_rename(source, destination):
+        if source == os.path.realpath(failing):
+            raise OSError("simulated move failure")
+        real_rename(source, destination)
+
+    monkeypatch.setattr(file_mgr.os, "rename", selective_rename)
+
+    mgr.move_to_discard_directory([failing, succeeding])
+
+    assert mgr.current_file() == failing
+    assert mgr.get_current_review_state() == REJECT
+    assert mgr.review_states[os.path.realpath(failing)] == REJECT
+
+
+def test_successful_moves_remove_stored_review_states(mgr, tmpdir):
+    moved = tmpdir.join("a.jpg")
+    remaining = tmpdir.join("b.jpg")
+    moved.write("")
+    remaining.write("")
+    mgr.load_file(moved)
+    mgr.set_current_review_state(REJECT)
+    mgr.load_file(remaining)
+    mgr.set_current_review_state(KEEP)
+
+    mgr.move_to_discard_directory([moved])
+
+    assert os.path.realpath(moved) not in mgr.review_states
+    assert mgr.get_review_state(remaining) == KEEP
+
+
 def test_move_to_discard_never_overwrites_existing_destination(
     mgr, tmpdir, monkeypatch
 ):
