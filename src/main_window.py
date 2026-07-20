@@ -172,12 +172,16 @@ class ImageViewerMainWindow(QMainWindow):
         review_menu.addSeparator()
 
         self.discard_rejected_action = QAction("Discard Rejected...", self)
+        self.discard_rejected_action.setShortcut("Ctrl+Delete")
         self.discard_rejected_action.triggered.connect(self.discard_rejected)
         review_menu.addAction(self.discard_rejected_action)
+        self.addAction(self.discard_rejected_action)
 
         self.keep_only_marked_action = QAction("Keep Only Marked...", self)
+        self.keep_only_marked_action.setShortcut("Ctrl+Shift+Delete")
         self.keep_only_marked_action.triggered.connect(self.keep_only_marked)
         review_menu.addAction(self.keep_only_marked_action)
+        self.addAction(self.keep_only_marked_action)
 
     # File operations
 
@@ -349,8 +353,31 @@ class ImageViewerMainWindow(QMainWindow):
         dialog.exec_()
         return dialog.clickedButton() is continue_button
 
-    def run_bulk_discard(self, operation_name, candidates):
+    def report_discard_failures(self, operation_name, failures):
+        """Show the files that could not be moved by a bulk operation."""
+        if not failures:
+            return
+
+        details = "\n".join(
+            f"{source}: {reason}" for source, reason in failures
+        )
+        QMessageBox.warning(
+            self,
+            f"{operation_name} - Move Failures",
+            f"Some images could not be moved:\n\n{details}",
+        )
+
+    def run_bulk_discard(
+        self,
+        operation_name,
+        candidates,
+        empty_message="There is nothing to discard.",
+    ):
         """Confirm and run a bulk discard operation for *candidates*."""
+        if not candidates:
+            QMessageBox.information(self, operation_name, empty_message)
+            return None
+
         counts = self.mgr.current_review_counts()
         directory = self.mgr.current_directory()
         quarantine = (
@@ -371,18 +398,23 @@ class ImageViewerMainWindow(QMainWindow):
 
         result = self.mgr.move_to_discard_directory(candidates)
         self.load_image(self.mgr.current_file())
+        self.report_discard_failures(operation_name, result.failed)
         return result
 
     def discard_rejected(self):
         """Move rejected images in the current directory after confirmation."""
         return self.run_bulk_discard(
-            "Discard Rejected", self.mgr.current_rejected_files()
+            "Discard Rejected",
+            self.mgr.current_rejected_files(),
+            "Nothing in the current directory is marked Reject.",
         )
 
     def keep_only_marked(self):
         """Move rejected and undecided images after confirmation."""
         return self.run_bulk_discard(
-            "Keep Only Marked", self.mgr.current_not_kept_files()
+            "Keep Only Marked",
+            self.mgr.current_not_kept_files(),
+            "There is nothing to discard.",
         )
 
     def toggle_full_screen(self):

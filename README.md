@@ -112,6 +112,8 @@ python src/main.py "C:\\Pictures"
 | Previous / next sibling folder | `Ctrl+Left` / `Ctrl+Right` |
 | Toggle Keep / Reject | `K` / `X` |
 | Keep / Reject and advance | `Ctrl+Up` / `Ctrl+Down` |
+| Discard images marked Reject | `Ctrl+Delete` |
+| Keep only images marked Keep | `Ctrl+Shift+Delete` |
 | Toggle full screen | `F` or `Enter` |
 | Exit full screen, then quit | `Esc` |
 | Zoom in / out | `+` / `-` |
