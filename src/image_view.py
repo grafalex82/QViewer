@@ -31,6 +31,7 @@ class ImageView(QScrollArea):
         # image zooming and panning cannot resize or reposition it.
         self.file_name_label = QLabel(self.viewport())
         self.file_name_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.file_name_label.setIndent(0)
         file_name_font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
         file_name_font.setPointSize(12)
         file_name_font.setFixedPitch(True)
@@ -40,6 +41,7 @@ class ImageView(QScrollArea):
         )
         self.file_name_label.move(0, 0)
         self.file_name_label.hide()
+        self._file_name = None
 
         self.surface.zoom_to_selection.connect(self.zoom_to_selection)
         self.surface.reset_zoom_signal.connect(self.reset_zoom)
@@ -52,7 +54,18 @@ class ImageView(QScrollArea):
 
 
     def show_file_name(self, file_name):
-        self.file_name_label.setText(file_name or "")
+        self._file_name = file_name
+        self._refresh_file_name_label()
+
+
+    def _refresh_file_name_label(self):
+        file_name = self._file_name or ""
+        visible_name = self.file_name_label.fontMetrics().elidedText(
+            file_name,
+            Qt.ElideLeft,
+            self.viewport().width(),
+        )
+        self.file_name_label.setText(visible_name)
         self.file_name_label.adjustSize()
         self.file_name_label.setVisible(bool(file_name))
         if file_name:
@@ -82,6 +95,7 @@ class ImageView(QScrollArea):
     # Events
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        self._refresh_file_name_label()
         self.resize_image()
 
 

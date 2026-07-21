@@ -248,10 +248,19 @@ class ImageViewerMainWindow(QMainWindow):
 
     def refresh_current_file_display(self):
         display_name = self.current_file_display_name()
-        self.setWindowTitle(display_name or "")
+        visible_name = self.fontMetrics().elidedText(
+            display_name or "",
+            Qt.ElideLeft,
+            self.width(),
+        )
+        self.setWindowTitle(visible_name)
 
         if self.isFullScreen():
             self.image_view.show_file_name(display_name)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.refresh_current_file_display()
 
     def load_image(self, image_path):
         self.refresh_current_file_display()
