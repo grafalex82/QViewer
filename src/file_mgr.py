@@ -304,6 +304,31 @@ class FileMgr:
         return result
 
 
+    def delete_current_file(self):
+        """Permanently delete the selected image and select its successor.
+
+        The file list is changed only after the filesystem deletion succeeds.
+        ``OSError`` is deliberately allowed to propagate so the UI can report
+        the operating-system error without losing the current selection.
+        """
+        current_path = self.current_file()
+        if current_path is None:
+            return None
+
+        current_path = os.path.realpath(current_path)
+        old_index = self.file_index
+        os.remove(current_path)
+        self.review_states.pop(current_path, None)
+
+        self.directory_files, self.directory_subdirs = self.list_dir(self.directory)
+        if not self.directory_files:
+            self.file_index = None
+        else:
+            self.file_index = min(old_index, len(self.directory_files) - 1)
+
+        return current_path
+
+
     def set_current_review_state(self, state):
         """Set the selected file's review state, if a file is selected."""
         fname = self.current_file()

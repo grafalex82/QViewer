@@ -52,7 +52,7 @@ The implemented behavior and known gaps are listed below.
 - Review workflow
   - [x] Mark images as Keep or Reject.
   - [x] Discard unwanted images into a recoverable quarantine directory.
-  - [ ] Discard a single (current) image.
+  - [x] Discard or permanently delete the current image after confirmation.
   - [ ] Filter or navigate according to review status.
 
 ## Requirements
@@ -115,8 +115,10 @@ directories, or unsupported files.
 Discarding is recoverable. QViewer moves affected files, rather than permanently
 deleting them, into a timestamped quarantine directory at
 `<current directory>/.qviewer-discarded/<timestamp>/`. To recover an image, move
-it from that timestamped directory back into the original directory. Plain
-`Delete` remains unused for now.
+it from that timestamped directory back into the original directory. Press
+`Delete` to discard only the current image. Press `Shift+Delete` to permanently
+delete the current image from disk. Both actions ask for confirmation, remove
+the image from the current file list, and advance to the next image.
 
 ## Controls
 
@@ -131,6 +133,8 @@ it from that timestamped directory back into the original directory. Plain
 | Toggle Reject | `X` |
 | Keep and advance | `Ctrl+Up` |
 | Reject and advance | `Ctrl+Down` |
+| Discard current image | `Delete` |
+| Permanently delete current image | `Shift+Delete` |
 | Discard rejected images | `Ctrl+Delete` |
 | Keep only marked images | `Ctrl+Shift+Delete` |
 | Toggle full screen | `F` or `Enter` |

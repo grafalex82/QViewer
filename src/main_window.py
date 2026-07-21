@@ -174,6 +174,20 @@ class ImageViewerMainWindow(QMainWindow):
 
         review_menu.addSeparator()
 
+        self.discard_current_action = QAction("Discard Current Image...", self)
+        self.discard_current_action.setShortcut("Delete")
+        self.discard_current_action.triggered.connect(self.discard_current)
+        review_menu.addAction(self.discard_current_action)
+        self.addAction(self.discard_current_action)
+
+        self.delete_current_action = QAction("Delete Current Image...", self)
+        self.delete_current_action.setShortcut("Shift+Delete")
+        self.delete_current_action.triggered.connect(self.delete_current)
+        review_menu.addAction(self.delete_current_action)
+        self.addAction(self.delete_current_action)
+
+        review_menu.addSeparator()
+
         self.discard_rejected_action = QAction("Discard Rejected...", self)
         self.discard_rejected_action.setShortcut("Ctrl+Delete")
         self.discard_rejected_action.triggered.connect(self.discard_rejected)
@@ -356,6 +370,35 @@ class ImageViewerMainWindow(QMainWindow):
         dialog.exec_()
         return dialog.clickedButton() is continue_button
 
+    def confirm_current_file_action(self, operation_name, image_path, permanent=False):
+        """Confirm moving or permanently deleting the current image."""
+        if not image_path:
+            return False
+
+        if permanent:
+            question = (
+                "Permanently delete this image from disk?\n\n"
+                f"{os.path.abspath(image_path)}\n\n"
+                "This action cannot be undone."
+            )
+            button_text = "Delete"
+        else:
+            question = (
+                "Move this image to the discarded files folder?\n\n"
+                f"{os.path.abspath(image_path)}"
+            )
+            button_text = "Discard"
+
+        dialog = QMessageBox(self)
+        dialog.setIcon(QMessageBox.Warning)
+        dialog.setWindowTitle(operation_name)
+        dialog.setText(question)
+        continue_button = dialog.addButton(button_text, QMessageBox.DestructiveRole)
+        cancel_button = dialog.addButton(QMessageBox.Cancel)
+        dialog.setDefaultButton(cancel_button)
+        dialog.exec_()
+        return dialog.clickedButton() is continue_button
+
     def report_discard_failures(self, operation_name, result):
         """Show the files that could not be moved by a bulk operation."""
         if not result.failed:
@@ -441,6 +484,41 @@ class ImageViewerMainWindow(QMainWindow):
             self.mgr.current_rejected_files(),
             "Nothing in the current directory is marked Reject.",
         )
+
+    def discard_current(self):
+        """Move the current image into quarantine after confirmation."""
+        current_file = self.mgr.current_file()
+        if not current_file or not self.confirm_current_file_action(
+            "Discard Current Image", current_file
+        ):
+            return None
+
+        result = self.mgr.move_to_discard_directory([current_file])
+        self.load_image(self.mgr.current_file())
+        if result.failed:
+            self.report_discard_failures("Discard Current Image", result)
+        return result
+
+    def delete_current(self):
+        """Permanently delete the current image after confirmation."""
+        current_file = self.mgr.current_file()
+        if not current_file or not self.confirm_current_file_action(
+            "Delete Current Image", current_file, permanent=True
+        ):
+            return None
+
+        try:
+            deleted = self.mgr.delete_current_file()
+        except OSError as error:
+            QMessageBox.warning(
+                self,
+                "Delete Current Image - Failed",
+                f"Could not delete {os.path.basename(current_file)}:\n\n{error}",
+            )
+            return None
+
+        self.load_image(self.mgr.current_file())
+        return deleted
 
     def keep_only_marked(self):
         """Move rejected and undecided images after confirmation."""
