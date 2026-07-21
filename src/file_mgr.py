@@ -382,6 +382,34 @@ class FileMgr:
             return True
 
         return False
+
+
+    def prev_keep(self):
+        """Select the nearest earlier image marked Keep."""
+        if self.file_index is None:
+            return False
+
+        for index in range(self.file_index - 1, -1, -1):
+            path = os.path.join(self.directory, self.directory_files[index])
+            if self.get_review_state(path) == KEEP:
+                self.file_index = index
+                return True
+
+        return False
+
+
+    def next_keep(self):
+        """Select the nearest later image marked Keep."""
+        if self.file_index is None:
+            return False
+
+        for index in range(self.file_index + 1, len(self.directory_files)):
+            path = os.path.join(self.directory, self.directory_files[index])
+            if self.get_review_state(path) == KEEP:
+                self.file_index = index
+                return True
+
+        return False
     
 
     def first(self):

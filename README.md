@@ -40,6 +40,7 @@ The implemented behavior and known gaps are listed below.
   - [ ] Show image metadata.
 - Navigation
   - [x] Move to the previous or next file in the current directory.
+  - [x] Move to the previous or next image marked Keep.
   - [x] Move to the previous or next sibling directory; the first image opens when the selected directory is not empty.
   - [ ] Remember recently opened files or folders.
   - [ ] Open images from ZIP archive like in normal directory.
@@ -53,7 +54,6 @@ The implemented behavior and known gaps are listed below.
   - [x] Mark images as Keep or Reject.
   - [x] Discard unwanted images into a recoverable quarantine directory.
   - [x] Discard or permanently delete the current image after confirmation.
-  - [ ] Filter or navigate according to review status.
 
 ## Requirements
 
@@ -127,6 +127,7 @@ the image from the current file list, and advance to the next image.
 | Open image | `Ctrl+O` |
 | Quit | `Ctrl+Q` |
 | Previous / next image | `Left` / `Right` |
+| Previous / next image marked Keep | `Shift+Left` / `Shift+Right` |
 | First / last image | `Home` / `End` |
 | Previous / next sibling folder | `Ctrl+Left` / `Ctrl+Right` |
 | Toggle Keep | `K` |
