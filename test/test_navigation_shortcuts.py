@@ -60,6 +60,35 @@ def test_current_file_display_name_uses_full_path_and_review_state(
 
 
 @pytest.mark.parametrize(
+    ("keep_count", "reject_count", "summary"),
+    (
+        (0, 0, ""),
+        (2, 0, " [K:2]"),
+        (0, 3, " [R:3]"),
+        (2, 3, " [K:2 R:3]"),
+    ),
+)
+def test_current_file_display_name_includes_nonzero_review_counts(
+    window, keep_count, reject_count, summary
+):
+    image_path = os.path.join("images", "image.jpg")
+    window.mgr.current_file = Mock(return_value=image_path)
+    window.mgr.current_file_position = Mock(return_value=(1, 10))
+    window.mgr.get_current_review_state = Mock(return_value=KEEP)
+    window.mgr.current_review_counts = Mock(
+        return_value={
+            UNDECIDED: 10 - keep_count - reject_count,
+            KEEP: keep_count,
+            REJECT: reject_count,
+        }
+    )
+
+    display_name = window.current_file_display_name()
+
+    assert display_name == f"{os.path.abspath(image_path)} (1/10) [KEEP]{summary}"
+
+
+@pytest.mark.parametrize(
     ("review_state", "marker"),
     (
         (KEEP, " [KEEP]"),

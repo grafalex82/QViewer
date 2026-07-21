@@ -37,6 +37,8 @@ The implemented behavior and known gaps are listed below.
 - Metadata
   - [x] Current file name in both windowed and full-screen mode
   - [x] Current file name index (e.g. image 5 of 10)
+  - [x] Current-folder Keep and Reject counts alongside the file name
+    (e.g. `[K:2 R:3]`; zero counts are omitted).
   - [ ] Show image metadata.
 - Navigation
   - [x] Move to the previous or next file in the current directory.

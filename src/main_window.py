@@ -244,7 +244,18 @@ class ImageViewerMainWindow(QMainWindow):
             REJECT: " [REJECT]",
             UNDECIDED: "",
         }
-        return display_name + state_markers[state]
+        display_name += state_markers[state]
+
+        counts = self.mgr.current_review_counts()
+        count_markers = []
+        if counts[KEEP]:
+            count_markers.append(f"K:{counts[KEEP]}")
+        if counts[REJECT]:
+            count_markers.append(f"R:{counts[REJECT]}")
+        if count_markers:
+            display_name += f" [{' '.join(count_markers)}]"
+
+        return display_name
 
     def refresh_current_file_display(self):
         display_name = self.current_file_display_name()
