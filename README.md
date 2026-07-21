@@ -50,8 +50,8 @@ The implemented behavior and known gaps are listed below.
   - [x] Mouse-wheel zoom centred on the cursor.
   - [x] Pan a zoomed image with Shift-mouse drag.
 - Review workflow
-  - [ ] Mark or like good images.
-  - [ ] Discard unwanted images.
+  - [x] Mark images as Keep or Reject.
+  - [x] Discard unwanted images into a recoverable quarantine directory.
   - [ ] Discard a single (current) image.
   - [ ] Filter or navigate according to review status.
 
@@ -101,6 +101,23 @@ You can also open a folder; QViewer loads its first file alphabetically:
 python src/main.py "C:\\Pictures"
 ```
 
+## Review workflow
+
+Mark the current image as Keep or Reject while reviewing a directory. **Discard
+Rejected** moves only images marked Reject and leaves both Keep and Undecided
+images alone. **Keep Only Marked** is broader: it preserves only images marked
+Keep, moving both Reject and Undecided images.
+
+Both bulk operations process only supported image files directly inside the
+current directory. They do not process images in child directories, sibling
+directories, or unsupported files.
+
+Discarding is recoverable. QViewer moves affected files, rather than permanently
+deleting them, into a timestamped quarantine directory at
+`<current directory>/.qviewer-discarded/<timestamp>/`. To recover an image, move
+it from that timestamped directory back into the original directory. Plain
+`Delete` remains unused for now.
+
 ## Controls
 
 | Action | Shortcut |
@@ -110,10 +127,12 @@ python src/main.py "C:\\Pictures"
 | Previous / next image | `Left` / `Right` |
 | First / last image | `Home` / `End` |
 | Previous / next sibling folder | `Ctrl+Left` / `Ctrl+Right` |
-| Toggle Keep / Reject | `K` / `X` |
-| Keep / Reject and advance | `Ctrl+Up` / `Ctrl+Down` |
-| Discard images marked Reject | `Ctrl+Delete` |
-| Keep only images marked Keep | `Ctrl+Shift+Delete` |
+| Toggle Keep | `K` |
+| Toggle Reject | `X` |
+| Keep and advance | `Ctrl+Up` |
+| Reject and advance | `Ctrl+Down` |
+| Discard rejected images | `Ctrl+Delete` |
+| Keep only marked images | `Ctrl+Shift+Delete` |
 | Toggle full screen | `F` or `Enter` |
 | Exit full screen, then quit | `Esc` |
 | Zoom in / out | `+` / `-` |
