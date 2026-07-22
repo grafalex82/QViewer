@@ -413,7 +413,8 @@ class FileMgr:
     
 
     def first(self):
-        if self.file_index is None:
+        """Select the first image, returning whether the selection changed."""
+        if self.file_index is None or self.file_index == 0:
             return False
 
         self.file_index = 0
@@ -421,10 +422,12 @@ class FileMgr:
     
 
     def last(self):
-        if self.file_index is None:
+        """Select the last image, returning whether the selection changed."""
+        last_index = len(self.directory_files) - 1
+        if self.file_index is None or self.file_index == last_index:
             return False
 
-        self.file_index = len(self.directory_files) - 1
+        self.file_index = last_index
         return True
 
     def next_dir(self):

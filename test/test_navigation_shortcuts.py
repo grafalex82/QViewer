@@ -164,6 +164,44 @@ def test_navigation_shortcuts_work_in_full_screen_mode(window, app):
     exercise_navigation_shortcuts(window, app)
 
 
+@pytest.mark.parametrize(
+    ("key", "manager_method", "target"),
+    (
+        (Qt.Key_Home, "first", os.path.join("images", "first.jpg")),
+        (Qt.Key_End, "last", os.path.join("images", "last.jpg")),
+    ),
+)
+def test_endpoint_shortcuts_load_selected_image(
+    window, app, key, manager_method, target
+):
+    setattr(window.mgr, manager_method, Mock(return_value=True))
+    window.mgr.current_file = Mock(return_value=target)
+    window.load_image = Mock()
+
+    QTest.keyClick(window, key)
+    app.processEvents()
+
+    getattr(window.mgr, manager_method).assert_called_once_with()
+    window.load_image.assert_called_once_with(target)
+
+
+@pytest.mark.parametrize(
+    ("key", "manager_method"),
+    ((Qt.Key_Home, "first"), (Qt.Key_End, "last")),
+)
+def test_endpoint_shortcuts_do_not_reload_when_directory_has_no_images(
+    window, app, key, manager_method
+):
+    setattr(window.mgr, manager_method, Mock(return_value=False))
+    window.load_image = Mock()
+
+    QTest.keyClick(window, key)
+    app.processEvents()
+
+    getattr(window.mgr, manager_method).assert_called_once_with()
+    window.load_image.assert_not_called()
+
+
 def exercise_zoom_shortcuts(window, app):
     window.image_view.scale_factor = 1.0
 

@@ -232,6 +232,13 @@ def test_first_fails_on_empty_dir(mgr, testdir):
     assert mgr.current_file() == None
 
 
+def test_first_does_nothing_when_already_on_first_file(mgr, testdir):
+    mgr.load_file(testdir.join("test1.jpg"))
+
+    assert mgr.first() == False
+    assert mgr.current_file() == testdir.join("test1.jpg")
+
+
 def test_last(mgr, testdir):
     mgr.load_file(testdir.join("test2.jpg"))
     assert mgr.last()
@@ -241,6 +248,19 @@ def test_last(mgr, testdir):
 def test_last_fails_on_empty_dir(mgr, testdir):
     mgr.load_directory(testdir.join("Sub2Empty"))
     assert mgr.last() == False
+    assert mgr.current_file() == None
+
+
+def test_last_does_nothing_when_already_on_last_file(mgr, testdir):
+    mgr.load_file(testdir.join("test3.jpg"))
+
+    assert mgr.last() == False
+    assert mgr.current_file() == testdir.join("test3.jpg")
+
+
+@pytest.mark.parametrize("method_name", ("first", "last"))
+def test_endpoint_navigation_fails_without_a_loaded_directory(mgr, method_name):
+    assert getattr(mgr, method_name)() == False
     assert mgr.current_file() == None
 
 

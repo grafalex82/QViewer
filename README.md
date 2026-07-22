@@ -42,6 +42,7 @@ The implemented behavior and known gaps are listed below.
   - [ ] Show image metadata.
 - Navigation
   - [x] Move to the previous or next file in the current directory.
+  - [x] Jump to the first or last image in the current directory with `Home` or `End`.
   - [x] Move to the previous or next image marked Keep.
   - [x] Move to the previous or next sibling directory; the first image opens when the selected directory is not empty.
   - [ ] Remember recently opened files or folders.
