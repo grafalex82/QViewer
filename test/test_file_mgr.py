@@ -67,6 +67,27 @@ def test_load_path_with_directory_loads_first_file(mgr, testdir):
     assert mgr.current_file() == testdir.join("test1.jpg")
 
 
+def test_load_path_with_dot_supports_sibling_directory_navigation(
+    mgr, tmpdir, monkeypatch
+):
+    first = tmpdir.mkdir("album-a")
+    first.join("first.jpg").write("")
+    second = tmpdir.mkdir("album-b")
+    second.join("second.jpg").write("")
+    monkeypatch.chdir(first)
+
+    mgr.load_path(".")
+
+    assert mgr.current_directory() == os.path.realpath(first)
+    assert mgr.current_file() == first.join("first.jpg")
+    assert mgr.next_dir()
+    assert mgr.current_directory() == os.path.realpath(second)
+    assert mgr.current_file() == second.join("second.jpg")
+    assert mgr.prev_dir()
+    assert mgr.current_directory() == os.path.realpath(first)
+    assert mgr.current_file() == first.join("first.jpg")
+
+
 def test_load_path_with_empty_directory(mgr, testdir):
     empty_dir = testdir.join("Sub2Empty")
 
@@ -292,6 +313,11 @@ def test_prev_dir2(mgr, testdir):
     assert mgr.prev_dir() == True
     assert mgr.current_directory() == testdir.join("Sub1")
     assert mgr.current_file() == testdir.join("Sub1").join("test4.jpg")
+
+
+@pytest.mark.parametrize("direction", ("prev_dir", "next_dir"))
+def test_directory_navigation_without_loaded_path_is_safe(mgr, direction):
+    assert not getattr(mgr, direction)()
 
 
 def test_newly_loaded_file_is_undecided(mgr, testdir):

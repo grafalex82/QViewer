@@ -68,6 +68,7 @@ class FileMgr:
             self.reset_current_dir()
             return
 
+        directory = os.path.realpath(os.fspath(directory))
         self.directory_files, self.directory_subdirs = self.list_dir(directory)
         self.directory = directory
         self.file_index = 0 if len(self.directory_files) else None
@@ -431,9 +432,18 @@ class FileMgr:
         return True
 
     def next_dir(self):
+        if self.directory is None:
+            return False
+
         parent, dirname = os.path.split(self.directory)
+        if not dirname:
+            return False
+
         files, subdirs = self.list_dir(parent)
-        index = subdirs.index(dirname)
+        try:
+            index = subdirs.index(dirname)
+        except ValueError:
+            return False
 
         if index < len(subdirs) - 1:
             index += 1
@@ -444,9 +454,18 @@ class FileMgr:
 
 
     def prev_dir(self):
+        if self.directory is None:
+            return False
+
         parent, dirname = os.path.split(self.directory)
+        if not dirname:
+            return False
+
         files, subdirs = self.list_dir(parent)
-        index = subdirs.index(dirname)
+        try:
+            index = subdirs.index(dirname)
+        except ValueError:
+            return False
 
         if index > 0:
             index -= 1
