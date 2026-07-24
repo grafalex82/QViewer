@@ -1,6 +1,7 @@
 import os
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QAction, QFileDialog, QMainWindow, QMessageBox
 
 from file_mgr import (
@@ -76,7 +77,9 @@ class ImageViewerMainWindow(QMainWindow):
         self.addAction(prev_action)
 
         next_action = QAction("Next Image", self)
-        next_action.setShortcut("Right")
+        next_action.setShortcuts(
+            (QKeySequence(Qt.Key_Right), QKeySequence(Qt.Key_Space))
+        )
         next_action.triggered.connect(self.next_image)
         view_menu.addAction(next_action)
         self.addAction(next_action)

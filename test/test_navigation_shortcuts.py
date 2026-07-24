@@ -11,25 +11,31 @@ from file_mgr import KEEP, REJECT, UNDECIDED
 
 def exercise_navigation_shortcuts(window, app):
     shortcuts = (
-        (window.mgr.prev, Qt.Key_Left, Qt.NoModifier),
-        (window.mgr.next, Qt.Key_Right, Qt.NoModifier),
-        (window.mgr.prev_keep, Qt.Key_Left, Qt.ShiftModifier),
-        (window.mgr.next_keep, Qt.Key_Right, Qt.ShiftModifier),
-        (window.mgr.first, Qt.Key_Home, Qt.NoModifier),
-        (window.mgr.last, Qt.Key_End, Qt.NoModifier),
-        (window.mgr.prev_dir, Qt.Key_Left, Qt.ControlModifier),
-        (window.mgr.next_dir, Qt.Key_Right, Qt.ControlModifier),
+        ("prev", Qt.Key_Left, Qt.NoModifier),
+        ("next", Qt.Key_Right, Qt.NoModifier),
+        ("next", Qt.Key_Space, Qt.NoModifier),
+        ("prev_keep", Qt.Key_Left, Qt.ShiftModifier),
+        ("next_keep", Qt.Key_Right, Qt.ShiftModifier),
+        ("first", Qt.Key_Home, Qt.NoModifier),
+        ("last", Qt.Key_End, Qt.NoModifier),
+        ("prev_dir", Qt.Key_Left, Qt.ControlModifier),
+        ("next_dir", Qt.Key_Right, Qt.ControlModifier),
     )
 
-    for method, _, _ in shortcuts:
-        setattr(window.mgr, method.__name__, Mock(return_value=False))
+    method_names = {method_name for method_name, _, _ in shortcuts}
+    for method_name in method_names:
+        setattr(window.mgr, method_name, Mock(return_value=False))
 
     for _, key, modifier in shortcuts:
         QTest.keyClick(window, key, modifier)
     app.processEvents()
 
-    for method, _, _ in shortcuts:
-        getattr(window.mgr, method.__name__).assert_called_once_with()
+    for method_name in method_names:
+        expected_calls = sum(
+            shortcut_method == method_name
+            for shortcut_method, _, _ in shortcuts
+        )
+        assert getattr(window.mgr, method_name).call_count == expected_calls
 
 
 def test_navigation_shortcuts_work_in_windowed_mode(window, app):

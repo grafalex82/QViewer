@@ -129,7 +129,7 @@ the image from the current file list, and advance to the next image.
 | --- | --- |
 | Open image | `Ctrl+O` |
 | Quit | `Ctrl+Q` |
-| Previous / next image | `Left` / `Right` |
+| Previous / next image | `Left` / `Right` or `Space` |
 | Previous / next image marked Keep | `Shift+Left` / `Shift+Right` |
 | First / last image | `Home` / `End` |
 | Previous / next sibling folder | `Ctrl+Left` / `Ctrl+Right` |
