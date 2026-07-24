@@ -33,6 +33,7 @@ The implemented behavior and known gaps are listed below.
   - [x] Full-screen mode.
   - [x] Fit image to window.
   - [x] Show image at original (1:1) size.
+  - [x] Rotate the current view left or right in 90-degree steps.
   - [ ] Add viewer preferences.
 - Metadata
   - [x] Current file name in both windowed and full-screen mode
@@ -144,10 +145,12 @@ the image from the current file list, and advance to the next image.
 | Toggle full screen | `F` or `Enter` |
 | Exit full screen, then quit | `Esc` |
 | Zoom in / out | `+` / `-` |
+| Rotate view left / right 90° | `L` / `R` |
 
 Use the **View** menu to select fit-to-window or original-size display. To try
 lasso zoom, drag a rectangle over the displayed image and click inside that
-selection.
+selection. Rotation affects only the current view: it does not modify the image
+file or its Keep/Reject state, and it is discarded when you navigate away.
 
 ## Development
 

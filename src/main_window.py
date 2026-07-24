@@ -153,6 +153,20 @@ class ImageViewerMainWindow(QMainWindow):
         view_menu.addAction(zoom_out_action)
         self.addAction(zoom_out_action)
 
+        view_menu.addSeparator()
+
+        rotate_left_action = QAction("Rotate Left", self)
+        rotate_left_action.setShortcut("L")
+        rotate_left_action.triggered.connect(self.image_view.rotate_left)
+        view_menu.addAction(rotate_left_action)
+        self.addAction(rotate_left_action)
+
+        rotate_right_action = QAction("Rotate Right", self)
+        rotate_right_action.setShortcut("R")
+        rotate_right_action.triggered.connect(self.image_view.rotate_right)
+        view_menu.addAction(rotate_right_action)
+        self.addAction(rotate_right_action)
+
         # Create the Review menu. Register these actions on the main window as
         # well so their shortcuts remain active while the menu bar is hidden.
         review_menu = menu_bar.addMenu("Review")

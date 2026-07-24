@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QPoint, QRect, Qt, pyqtSlot
-from PyQt5.QtGui import QFontDatabase, QPixmap
+from PyQt5.QtGui import QFontDatabase, QPixmap, QTransform
 from PyQt5.QtWidgets import QFrame, QLabel, QScrollArea
 
 from image_surface import ImageSurface
@@ -51,6 +51,7 @@ class ImageView(QScrollArea):
         self.scale_factor = 1.0
         self.zoom_mode = self.ZOOM_FIT_TO_WINDOW
         self.zoom_changed = False
+        self.rotation_degrees = 0
 
 
     def show_file_name(self, file_name):
@@ -79,8 +80,10 @@ class ImageView(QScrollArea):
 
 
     def load_image(self, image_path):
+        self.rotation_degrees = 0
         if not image_path:
             self.pixmap = None
+            self.surface.clear()
             return
 
         self.pixmap = QPixmap(image_path)
@@ -90,6 +93,35 @@ class ImageView(QScrollArea):
 
         self.reset_zoom()
         self.surface.reset_selection()
+
+
+    def rotate_left(self):
+        """Rotate the current view 90 degrees counter-clockwise."""
+        if not self.pixmap:
+            return
+
+        self.rotation_degrees = (self.rotation_degrees - 90) % 360
+        self.surface.reset_selection()
+        self.resize_image()
+
+
+    def rotate_right(self):
+        """Rotate the current view 90 degrees clockwise."""
+        if not self.pixmap:
+            return
+
+        self.rotation_degrees = (self.rotation_degrees + 90) % 360
+        self.surface.reset_selection()
+        self.resize_image()
+
+
+    def oriented_pixmap(self):
+        """Return the source pixmap with the transient view rotation applied."""
+        if not self.pixmap or self.rotation_degrees == 0:
+            return self.pixmap
+
+        transform = QTransform().rotate(self.rotation_degrees)
+        return self.pixmap.transformed(transform, Qt.SmoothTransformation)
 
 
     # Events
@@ -164,19 +196,20 @@ class ImageView(QScrollArea):
         if not self.pixmap:
             return
 
+        oriented_pixmap = self.oriented_pixmap()
         viewport_size = self.viewport().size()
         if self.zoom_mode == self.ZOOM_FIT_TO_WINDOW and not self.zoom_changed:
-            factor_h = float(viewport_size.height()) / self.pixmap.size().height()
-            factor_w = float(viewport_size.width()) / self.pixmap.size().width()
+            factor_h = float(viewport_size.height()) / oriented_pixmap.size().height()
+            factor_w = float(viewport_size.width()) / oriented_pixmap.size().width()
             self.scale_factor = min(factor_h, factor_w)
-            scaled_pixmap = self.pixmap.scaled(
+            scaled_pixmap = oriented_pixmap.scaled(
                 viewport_size,
                 Qt.KeepAspectRatio,
                 Qt.SmoothTransformation,
             )
         else:
-            scaled_size = self.pixmap.size() * self.scale_factor
-            scaled_pixmap = self.pixmap.scaled(
+            scaled_size = oriented_pixmap.size() * self.scale_factor
+            scaled_pixmap = oriented_pixmap.scaled(
                 scaled_size, Qt.KeepAspectRatio, Qt.SmoothTransformation
             )
 
