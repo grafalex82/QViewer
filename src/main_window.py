@@ -96,6 +96,18 @@ class ImageViewerMainWindow(QMainWindow):
         view_menu.addAction(next_keep_action)
         self.addAction(next_keep_action)
 
+        first_keep_action = QAction("First Keep Image", self)
+        first_keep_action.setShortcut("Shift+Home")
+        first_keep_action.triggered.connect(self.first_keep_image)
+        view_menu.addAction(first_keep_action)
+        self.addAction(first_keep_action)
+
+        last_keep_action = QAction("Last Keep Image", self)
+        last_keep_action.setShortcut("Shift+End")
+        last_keep_action.triggered.connect(self.last_keep_image)
+        view_menu.addAction(last_keep_action)
+        self.addAction(last_keep_action)
+
         first_action = QAction("First Image", self)
         first_action.setShortcut("Home")
         first_action.triggered.connect(self.first_image)
@@ -334,6 +346,14 @@ class ImageViewerMainWindow(QMainWindow):
 
     def next_keep_image(self):
         if self.mgr.next_keep():
+            self.load_image(self.mgr.current_file())
+
+    def first_keep_image(self):
+        if self.mgr.first_keep():
+            self.load_image(self.mgr.current_file())
+
+    def last_keep_image(self):
+        if self.mgr.last_keep():
             self.load_image(self.mgr.current_file())
 
     def first_image(self):

@@ -411,6 +411,38 @@ class FileMgr:
                 return True
 
         return False
+
+
+    def first_keep(self):
+        """Select the first image marked Keep."""
+        if self.file_index is None:
+            return False
+
+        for index, filename in enumerate(self.directory_files):
+            path = os.path.join(self.directory, filename)
+            if self.get_review_state(path) == KEEP:
+                if index == self.file_index:
+                    return False
+                self.file_index = index
+                return True
+
+        return False
+
+
+    def last_keep(self):
+        """Select the last image marked Keep."""
+        if self.file_index is None:
+            return False
+
+        for index in range(len(self.directory_files) - 1, -1, -1):
+            path = os.path.join(self.directory, self.directory_files[index])
+            if self.get_review_state(path) == KEEP:
+                if index == self.file_index:
+                    return False
+                self.file_index = index
+                return True
+
+        return False
     
 
     def first(self):

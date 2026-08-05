@@ -16,6 +16,8 @@ def exercise_navigation_shortcuts(window, app):
         ("next", Qt.Key_Space, Qt.NoModifier),
         ("prev_keep", Qt.Key_Left, Qt.ShiftModifier),
         ("next_keep", Qt.Key_Right, Qt.ShiftModifier),
+        ("first_keep", Qt.Key_Home, Qt.ShiftModifier),
+        ("last_keep", Qt.Key_End, Qt.ShiftModifier),
         ("first", Qt.Key_Home, Qt.NoModifier),
         ("last", Qt.Key_End, Qt.NoModifier),
         ("prev_dir", Qt.Key_Left, Qt.ControlModifier),
@@ -192,6 +194,27 @@ def test_endpoint_shortcuts_load_selected_image(
 
 
 @pytest.mark.parametrize(
+    ("key", "manager_method", "target"),
+    (
+        (Qt.Key_Home, "first_keep", os.path.join("images", "first-keep.jpg")),
+        (Qt.Key_End, "last_keep", os.path.join("images", "last-keep.jpg")),
+    ),
+)
+def test_keep_endpoint_shortcuts_load_selected_image(
+    window, app, key, manager_method, target
+):
+    setattr(window.mgr, manager_method, Mock(return_value=True))
+    window.mgr.current_file = Mock(return_value=target)
+    window.load_image = Mock()
+
+    QTest.keyClick(window, key, Qt.ShiftModifier)
+    app.processEvents()
+
+    getattr(window.mgr, manager_method).assert_called_once_with()
+    window.load_image.assert_called_once_with(target)
+
+
+@pytest.mark.parametrize(
     ("key", "manager_method"),
     ((Qt.Key_Home, "first"), (Qt.Key_End, "last")),
 )
@@ -202,6 +225,23 @@ def test_endpoint_shortcuts_do_not_reload_when_directory_has_no_images(
     window.load_image = Mock()
 
     QTest.keyClick(window, key)
+    app.processEvents()
+
+    getattr(window.mgr, manager_method).assert_called_once_with()
+    window.load_image.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("key", "manager_method"),
+    ((Qt.Key_Home, "first_keep"), (Qt.Key_End, "last_keep")),
+)
+def test_keep_endpoint_shortcuts_do_not_reload_when_no_keep_exists(
+    window, app, key, manager_method
+):
+    setattr(window.mgr, manager_method, Mock(return_value=False))
+    window.load_image = Mock()
+
+    QTest.keyClick(window, key, Qt.ShiftModifier)
     app.processEvents()
 
     getattr(window.mgr, manager_method).assert_called_once_with()

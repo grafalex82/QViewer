@@ -241,6 +241,41 @@ def test_keep_navigation_fails_on_empty_dir(mgr, testdir, direction):
     assert mgr.current_file() is None
 
 
+@pytest.mark.parametrize(
+    ("endpoint", "expected"),
+    (("first_keep", "test1.jpg"), ("last_keep", "test3.jpg")),
+)
+def test_keep_endpoint_navigation_selects_first_or_last_keep(
+    mgr, testdir, endpoint, expected
+):
+    for name in ("test1.jpg", "test3.jpg"):
+        mgr.load_file(testdir.join(name))
+        mgr.set_current_review_state(KEEP)
+    mgr.load_file(testdir.join("test2.jpg"))
+
+    assert getattr(mgr, endpoint)()
+    assert mgr.current_file() == testdir.join(expected)
+
+
+@pytest.mark.parametrize("endpoint", ("first_keep", "last_keep"))
+def test_keep_endpoint_navigation_stays_current_when_no_keep_exists(
+    mgr, testdir, endpoint
+):
+    mgr.load_file(testdir.join("test2.jpg"))
+    current = mgr.current_file()
+
+    assert not getattr(mgr, endpoint)()
+    assert mgr.current_file() == current
+
+
+@pytest.mark.parametrize("endpoint", ("first_keep", "last_keep"))
+def test_keep_endpoint_navigation_fails_on_empty_dir(mgr, testdir, endpoint):
+    mgr.load_directory(testdir.join("Sub2Empty"))
+
+    assert not getattr(mgr, endpoint)()
+    assert mgr.current_file() is None
+
+
 def test_first(mgr, testdir):
     mgr.load_file(testdir.join("test2.jpg"))
     assert mgr.first()
