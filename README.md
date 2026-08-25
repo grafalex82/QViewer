@@ -40,6 +40,8 @@ The implemented behavior and known gaps are listed below.
   - [x] Current file name index (e.g. image 5 of 10)
   - [x] Current-folder Keep and Reject counts alongside the file name
     (e.g. `[K:2 R:3]`; zero counts are omitted).
+  - [x] Toggle a bottom-left disk statistics overlay with per-image,
+    current-folder, Keep/Reject, and free-space byte totals.
   - [ ] Show image metadata.
 - Navigation
   - [x] Move to the previous or next file in the current directory.
@@ -145,6 +147,7 @@ the image from the current file list, and advance to the next image.
 | Keep only marked images | `Ctrl+Shift+Delete` |
 | Toggle full screen | `F` or `Enter` |
 | Exit full screen, then quit | `Esc` |
+| Toggle disk statistics overlay | `D` |
 | Zoom in / out | `+` / `-` |
 | Rotate view left / right 90° | `L` / `R` |
 
@@ -152,6 +155,8 @@ Use the **View** menu to select fit-to-window or original-size display. To try
 lasso zoom, drag a rectangle over the displayed image and click inside that
 selection. Rotation affects only the current view: it does not modify the image
 file or its Keep/Reject state, and it is discarded when you navigate away.
+The `D` overlay remains in the bottom-left corner in windowed and full-screen
+modes and reports all sizes in bytes with comma thousands separators.
 
 ## Development
 

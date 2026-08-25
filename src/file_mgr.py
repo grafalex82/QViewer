@@ -1,4 +1,5 @@
 import os
+import shutil
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -19,6 +20,21 @@ class DiscardResult:
     destination: str | None = None
     moved: list[str] = field(default_factory=list)
     failed: list[tuple[str, str]] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class DiskStats:
+    """Disk and review-size statistics for the currently loaded directory."""
+
+    current_index: int | None = None
+    current_file_size: int = 0
+    image_count: int = 0
+    total_image_size: int = 0
+    keep_count: int = 0
+    keep_size: int = 0
+    reject_count: int = 0
+    reject_size: int = 0
+    free_disk_space: int = 0
 
 
 class FileMgr:
@@ -159,6 +175,60 @@ class FileMgr:
             path = os.path.realpath(os.path.join(self.directory, fname))
             counts[self.get_review_state(path)] += 1
         return counts
+
+
+    def current_disk_stats(self):
+        """Return byte-accurate statistics for managed images in this folder.
+
+        Files can disappear or become unreadable while a directory is open. In
+        that case they still count as entries in the loaded image list, but
+        contribute zero bytes rather than making the viewer fail to refresh.
+        """
+        if self.directory is None:
+            return DiskStats()
+
+        total_size = 0
+        keep_count = 0
+        keep_size = 0
+        reject_count = 0
+        reject_size = 0
+        current_file_size = 0
+
+        for index, fname in enumerate(self.directory_files):
+            path = os.path.realpath(os.path.join(self.directory, fname))
+            try:
+                size = os.path.getsize(path)
+            except OSError:
+                size = 0
+
+            total_size += size
+            if index == self.file_index:
+                current_file_size = size
+
+            state = self.get_review_state(path)
+            if state == KEEP:
+                keep_count += 1
+                keep_size += size
+            elif state == REJECT:
+                reject_count += 1
+                reject_size += size
+
+        try:
+            free_disk_space = shutil.disk_usage(self.directory).free
+        except OSError:
+            free_disk_space = 0
+
+        return DiskStats(
+            current_index=(self.file_index + 1 if self.file_index is not None else None),
+            current_file_size=current_file_size,
+            image_count=len(self.directory_files),
+            total_image_size=total_size,
+            keep_count=keep_count,
+            keep_size=keep_size,
+            reject_count=reject_count,
+            reject_size=reject_size,
+            free_disk_space=free_disk_space,
+        )
 
 
     def create_discard_directory(self, target_files=None):

@@ -43,6 +43,17 @@ class ImageView(QScrollArea):
         self.file_name_label.hide()
         self._file_name = None
 
+        # This label belongs to the viewport, not the scrollable image surface,
+        # so it remains fixed in the screen corner at every zoom level.
+        self.disk_stats_label = QLabel(self.viewport())
+        self.disk_stats_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.disk_stats_label.setFont(file_name_font)
+        self.disk_stats_label.setStyleSheet(
+            "background-color: black; color: lightgreen; padding: 4px;"
+        )
+        self.disk_stats_label.hide()
+        self._disk_stats_text = None
+
         self.surface.zoom_to_selection.connect(self.zoom_to_selection)
         self.surface.reset_zoom_signal.connect(self.reset_zoom)
         self.surface.pan_signal.connect(self.pan)
@@ -71,6 +82,29 @@ class ImageView(QScrollArea):
         self.file_name_label.setVisible(bool(file_name))
         if file_name:
             self.file_name_label.raise_()
+
+
+    def show_disk_stats(self, text):
+        """Show *text* in a viewport overlay, or hide it when text is empty."""
+        self._disk_stats_text = text
+        self._refresh_disk_stats_label()
+
+
+    def _refresh_disk_stats_label(self):
+        text = self._disk_stats_text or ""
+        self.disk_stats_label.setText(text)
+        self.disk_stats_label.adjustSize()
+        self.disk_stats_label.move(
+            0,
+            max(0, self.viewport().height() - self.disk_stats_label.height()),
+        )
+        self.disk_stats_label.setVisible(bool(text))
+        if text:
+            self.disk_stats_label.raise_()
+
+
+    def disk_stats_visible(self):
+        return bool(self._disk_stats_text)
 
 
     def set_scroll_bars_visible(self, visible):
@@ -128,6 +162,7 @@ class ImageView(QScrollArea):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self._refresh_file_name_label()
+        self._refresh_disk_stats_label()
         self.resize_image()
 
 

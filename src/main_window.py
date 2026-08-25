@@ -149,6 +149,14 @@ class ImageViewerMainWindow(QMainWindow):
         full_screen_action.triggered.connect(self.toggle_full_screen)
         view_menu.addAction(full_screen_action)
 
+        self.disk_stats_action = QAction(
+            "Disk Statistics", self, checkable=True
+        )
+        self.disk_stats_action.setShortcut("D")
+        self.disk_stats_action.triggered.connect(self.toggle_disk_stats)
+        view_menu.addAction(self.disk_stats_action)
+        self.addAction(self.disk_stats_action)
+
         self.update_zoom_menus()
 
         view_menu.addSeparator()
@@ -297,6 +305,46 @@ class ImageViewerMainWindow(QMainWindow):
 
         if self.isFullScreen():
             self.image_view.show_file_name(display_name)
+
+        self.refresh_disk_stats()
+
+    @staticmethod
+    def format_disk_stats(stats):
+        """Format all sizes as bytes with comma thousands separators."""
+        current_index = stats.current_index if stats.current_index is not None else "N/A"
+        return "\n".join(
+            (
+                f"Image index: {current_index}",
+                f"Image size: {stats.current_file_size:,} bytes",
+                f"Images: {stats.image_count:,}",
+                f"Images size: {stats.total_image_size:,} bytes",
+                f"KEEP: {stats.keep_count:,}",
+                f"KEEP size: {stats.keep_size:,} bytes",
+                f"REJECT: {stats.reject_count:,}",
+                f"REJECT size: {stats.reject_size:,} bytes",
+                f"Free disk space: {stats.free_disk_space:,} bytes",
+            )
+        )
+
+    def refresh_disk_stats(self):
+        """Refresh the overlay only while it is enabled."""
+        if not self.disk_stats_action.isChecked():
+            return
+
+        self.image_view.show_disk_stats(
+            self.format_disk_stats(self.mgr.current_disk_stats())
+        )
+
+    def toggle_disk_stats(self, visible=None):
+        """Toggle the bottom-left disk statistics overlay."""
+        if visible is None:
+            visible = not self.disk_stats_action.isChecked()
+            self.disk_stats_action.setChecked(visible)
+
+        if visible:
+            self.refresh_disk_stats()
+        else:
+            self.image_view.show_disk_stats(None)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
