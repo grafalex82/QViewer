@@ -14,6 +14,7 @@ keyboard or returning to a file manager.
 Main features are:
 - Windowed and full-screen modes.
 - Lasso or mouse-wheel zoom.
+- On-demand image, view, file, and EXIF statistics.
 - Fast navigation between images in one folder and quick jumps between sibling folders.
 - Review mode for marking good images and discarding the rest.
 
@@ -42,7 +43,10 @@ The implemented behavior and known gaps are listed below.
     (e.g. `[K:2 R:3]`; zero counts are omitted).
   - [x] Toggle a bottom-left disk statistics overlay with per-image,
     current-folder, Keep/Reject, and free-space byte totals.
-  - [ ] Show image metadata.
+  - [x] Toggle a bottom-right image statistics overlay with resolution, live
+    zoom and displayed size, standard aspect-ratio detection, compression,
+    DPI, color depth, file details, directory position, and EXIF times when
+    available.
 - Navigation
   - [x] Move to the previous or next file in the current directory.
   - [x] Jump to the first or last image in the current directory with `Home` or `End`.
@@ -65,6 +69,7 @@ The implemented behavior and known gaps are listed below.
 
 - Python 3.10 or newer
 - PyQt5
+- Pillow
 
 ## Setup
 
@@ -148,6 +153,7 @@ the image from the current file list, and advance to the next image.
 | Toggle full screen | `F` or `Enter` |
 | Exit full screen, then quit | `Esc` |
 | Toggle disk statistics overlay | `D` |
+| Toggle image statistics overlay | `I` |
 | Zoom in / out | `+` / `-` |
 | Rotate view left / right 90° | `L` / `R` |
 
@@ -157,6 +163,10 @@ selection. Rotation affects only the current view: it does not modify the image
 file or its Keep/Reject state, and it is discarded when you navigate away.
 The `D` overlay remains in the bottom-left corner in windowed and full-screen
 modes and reports all sizes in bytes with comma thousands separators.
+The `I` overlay remains in the bottom-right corner at every zoom level. Its
+visible resolution is the current scaled image size in the scroll area; the
+image resolution and aspect ratio continue to describe the source file.
+Metadata that is not present in the file, such as DPI or EXIF dates, is omitted.
 
 ## Development
 
@@ -167,9 +177,9 @@ cd test
 python -m pytest
 ```
 
-The existing tests cover directory and file navigation. GUI interaction tests,
-formatting, linting, and continuous integration are planned as part of the
-developer-foundation work.
+The test suite covers directory and file navigation, review and discard flows,
+metadata formatting, and GUI interactions such as shortcuts, overlays, zoom,
+and rotation.
 
 See the [test suite documentation](test/README.md) for test organization and
 test creation guidelines.
@@ -181,6 +191,7 @@ src/main.py                      Application entry point
 src/main_window.py               Main window, menus, and shortcuts
 src/image_view.py                Image display and zoom behavior
 src/image_surface.py             Image painting and mouse selection
+src/image_stats.py               Image, filesystem, and EXIF metadata formatting
 src/file_mgr.py                  Directory and image-navigation model
 test/                            Automated tests
 misc/                            Development image assets and helpers

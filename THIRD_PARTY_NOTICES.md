@@ -9,6 +9,8 @@ license terms. Those terms apply to the third-party components themselves.
   license. QViewer uses the GPL edition. PyQt5 wheels may bundle Qt libraries
   under separate Qt license terms. See the license files and metadata included
   with the installed or redistributed packages.
+- **Pillow** — Historical Permission Notice and Disclaimer (HPND) License. It
+  is used to read image and EXIF metadata for the image statistics overlay.
 
 ## Development dependency
 

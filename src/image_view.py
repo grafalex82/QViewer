@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QPoint, QRect, Qt, pyqtSlot
+from PyQt5.QtCore import QPoint, QRect, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QFontDatabase, QPixmap, QTransform
 from PyQt5.QtWidgets import QFrame, QLabel, QScrollArea
 
@@ -17,6 +17,7 @@ class ImageView(QScrollArea):
     ZOOM_1_TO_1 = 1
     ZOOM_FIT_TO_WINDOW = 2
     WHEEL_ZOOM_FACTOR = 1.10
+    view_stats_changed = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -53,6 +54,17 @@ class ImageView(QScrollArea):
         )
         self.disk_stats_label.hide()
         self._disk_stats_text = None
+
+        # Image statistics are anchored to the opposite viewport corner. Like
+        # the disk overlay, this keeps them independent of scrolling and zoom.
+        self.image_stats_label = QLabel(self.viewport())
+        self.image_stats_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.image_stats_label.setFont(file_name_font)
+        self.image_stats_label.setStyleSheet(
+            "background-color: black; color: lightgreen; padding: 4px;"
+        )
+        self.image_stats_label.hide()
+        self._image_stats_text = None
 
         self.surface.zoom_to_selection.connect(self.zoom_to_selection)
         self.surface.reset_zoom_signal.connect(self.reset_zoom)
@@ -107,6 +119,33 @@ class ImageView(QScrollArea):
         return bool(self._disk_stats_text)
 
 
+    def show_image_stats(self, text):
+        """Show *text* in the bottom-right viewport overlay."""
+        self._image_stats_text = text
+        self._refresh_image_stats_label()
+
+
+    def _refresh_image_stats_label(self):
+        text = self._image_stats_text or ""
+        self.image_stats_label.setText(text)
+        self.image_stats_label.adjustSize()
+        self.image_stats_label.move(
+            max(0, self.viewport().width() - self.image_stats_label.width()),
+            max(0, self.viewport().height() - self.image_stats_label.height()),
+        )
+        self.image_stats_label.setVisible(bool(text))
+        if text:
+            self.image_stats_label.raise_()
+
+
+    def displayed_image_size(self):
+        """Return the scaled image size used by the scroll area, in pixels."""
+        pixmap = self.surface.pixmap()
+        if pixmap is None or pixmap.isNull():
+            return 0, 0
+        return pixmap.width(), pixmap.height()
+
+
     def set_scroll_bars_visible(self, visible):
         policy = Qt.ScrollBarAsNeeded if visible else Qt.ScrollBarAlwaysOff
         self.setHorizontalScrollBarPolicy(policy)
@@ -118,11 +157,15 @@ class ImageView(QScrollArea):
         if not image_path:
             self.pixmap = None
             self.surface.clear()
+            self.view_stats_changed.emit()
             return
 
         self.pixmap = QPixmap(image_path)
         if self.pixmap.isNull():
             print("Failed to load image.")
+            self.pixmap = None
+            self.surface.clear()
+            self.view_stats_changed.emit()
             return
 
         self.reset_zoom()
@@ -163,6 +206,7 @@ class ImageView(QScrollArea):
         super().resizeEvent(event)
         self._refresh_file_name_label()
         self._refresh_disk_stats_label()
+        self._refresh_image_stats_label()
         self.resize_image()
 
 
@@ -254,6 +298,7 @@ class ImageView(QScrollArea):
             scaled_pixmap.width() > viewport_size.width()
             or scaled_pixmap.height() > viewport_size.height()
         )
+        self.view_stats_changed.emit()
 
 
     @pyqtSlot(QPoint)

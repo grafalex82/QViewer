@@ -11,6 +11,8 @@ from file_mgr import (
     UNDECIDED,
     FileMgr,
 )
+from image_stats import format_image_stats as build_image_stats_text
+from image_stats import read_image_stats
 from image_view import ImageView
 
 
@@ -32,9 +34,11 @@ class ImageViewerMainWindow(QMainWindow):
         self.fit_to_window = True
         self.mgr = FileMgr()
         self.maximized = False
+        self._current_image_stats = None
 
         self.init_ui()
         self.create_menu()
+        self.image_view.view_stats_changed.connect(self.refresh_image_stats)
 
         self.prepare_for_path(image_path)
 
@@ -156,6 +160,14 @@ class ImageViewerMainWindow(QMainWindow):
         self.disk_stats_action.triggered.connect(self.toggle_disk_stats)
         view_menu.addAction(self.disk_stats_action)
         self.addAction(self.disk_stats_action)
+
+        self.image_stats_action = QAction(
+            "Image Statistics", self, checkable=True
+        )
+        self.image_stats_action.setShortcut("I")
+        self.image_stats_action.triggered.connect(self.toggle_image_stats)
+        view_menu.addAction(self.image_stats_action)
+        self.addAction(self.image_stats_action)
 
         self.update_zoom_menus()
 
@@ -346,13 +358,41 @@ class ImageViewerMainWindow(QMainWindow):
         else:
             self.image_view.show_disk_stats(None)
 
+    def format_image_stats(self):
+        """Combine current file metadata with live zoom and display values."""
+        return build_image_stats_text(
+            self._current_image_stats,
+            self.image_view.scale_factor,
+            self.image_view.displayed_image_size(),
+            self.mgr.current_file_position(),
+        )
+
+    def refresh_image_stats(self):
+        """Refresh the bottom-right overlay only while it is enabled."""
+        if not self.image_stats_action.isChecked():
+            return
+        self.image_view.show_image_stats(self.format_image_stats())
+
+    def toggle_image_stats(self, visible=None):
+        """Toggle the bottom-right image metadata and view overlay."""
+        if visible is None:
+            visible = not self.image_stats_action.isChecked()
+            self.image_stats_action.setChecked(visible)
+
+        if visible:
+            self.refresh_image_stats()
+        else:
+            self.image_view.show_image_stats(None)
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.refresh_current_file_display()
 
     def load_image(self, image_path):
+        self._current_image_stats = read_image_stats(image_path)
         self.refresh_current_file_display()
         self.image_view.load_image(image_path)
+        self.refresh_image_stats()
 
     # Actions
 
