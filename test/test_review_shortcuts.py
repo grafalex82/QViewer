@@ -123,6 +123,69 @@ def test_set_state_and_next_shortcuts_set_state_at_last_image_without_moving(
     assert loaded_window.mgr.get_review_state(last_file) == requested_state
 
 
+@pytest.mark.parametrize(
+    ("key", "state"),
+    ((Qt.Key_Up, KEEP), (Qt.Key_Down, REJECT)),
+)
+@pytest.mark.parametrize("full_screen", (False, True))
+def test_move_previous_review_state_shortcuts_transfer_state_without_navigating(
+    loaded_window, app, key, state, full_screen
+):
+    previous_file = loaded_window.mgr.current_file()
+    loaded_window.mgr.set_current_review_state(state)
+    loaded_window.mgr.next()
+    current_file = loaded_window.mgr.current_file()
+    loaded_window.mgr.set_current_review_state(
+        REJECT if state == KEEP else KEEP
+    )
+
+    if full_screen:
+        loaded_window.show_full_screen()
+        app.processEvents()
+
+    QTest.keyClick(loaded_window, key, Qt.ControlModifier | Qt.ShiftModifier)
+    app.processEvents()
+
+    assert loaded_window.mgr.current_file() == current_file
+    assert loaded_window.mgr.file_index == 1
+    assert loaded_window.mgr.get_review_state(previous_file) == UNDECIDED
+    assert loaded_window.mgr.get_review_state(current_file) == state
+
+
+@pytest.mark.parametrize(
+    ("key", "state"),
+    ((Qt.Key_Up, KEEP), (Qt.Key_Down, REJECT)),
+)
+def test_move_previous_review_state_shortcuts_require_matching_previous_state(
+    loaded_window, app, key, state
+):
+    previous_file = loaded_window.mgr.current_file()
+    loaded_window.mgr.set_current_review_state(REJECT if state == KEEP else KEEP)
+    loaded_window.mgr.next()
+    current_file = loaded_window.mgr.current_file()
+    loaded_window.mgr.set_current_review_state(UNDECIDED)
+
+    QTest.keyClick(loaded_window, key, Qt.ControlModifier | Qt.ShiftModifier)
+    app.processEvents()
+
+    assert loaded_window.mgr.current_file() == current_file
+    assert loaded_window.mgr.get_review_state(previous_file) != UNDECIDED
+    assert loaded_window.mgr.get_review_state(current_file) == UNDECIDED
+
+
+@pytest.mark.parametrize("key", (Qt.Key_Up, Qt.Key_Down))
+def test_move_previous_review_state_shortcuts_are_safe_at_first_image(
+    loaded_window, app, key
+):
+    current_file = loaded_window.mgr.current_file()
+
+    QTest.keyClick(loaded_window, key, Qt.ControlModifier | Qt.ShiftModifier)
+    app.processEvents()
+
+    assert loaded_window.mgr.current_file() == current_file
+    assert loaded_window.mgr.get_review_state(current_file) == UNDECIDED
+
+
 @pytest.mark.parametrize("key", (Qt.Key_Up, Qt.Key_Down))
 @pytest.mark.parametrize("full_screen", (False, True))
 def test_plain_vertical_arrows_do_not_set_state_or_advance(

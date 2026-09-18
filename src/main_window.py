@@ -233,6 +233,24 @@ class ImageViewerMainWindow(QMainWindow):
         review_menu.addAction(self.reject_and_next_action)
         self.addAction(self.reject_and_next_action)
 
+        self.move_previous_keep_action = QAction("Move Previous Keep to Current", self)
+        self.move_previous_keep_action.setShortcut("Ctrl+Shift+Up")
+        self.move_previous_keep_action.triggered.connect(
+            lambda: self.move_previous_review_state_to_current(KEEP)
+        )
+        review_menu.addAction(self.move_previous_keep_action)
+        self.addAction(self.move_previous_keep_action)
+
+        self.move_previous_reject_action = QAction(
+            "Move Previous Reject to Current", self
+        )
+        self.move_previous_reject_action.setShortcut("Ctrl+Shift+Down")
+        self.move_previous_reject_action.triggered.connect(
+            lambda: self.move_previous_review_state_to_current(REJECT)
+        )
+        review_menu.addAction(self.move_previous_reject_action)
+        self.addAction(self.move_previous_reject_action)
+
         review_menu.addSeparator()
 
         self.discard_current_action = QAction("Discard Current Image...", self)
@@ -477,6 +495,11 @@ class ImageViewerMainWindow(QMainWindow):
         if self.mgr.next():
             self.load_image(self.mgr.current_file())
         else:
+            self.refresh_current_file_display()
+
+    def move_previous_review_state_to_current(self, state):
+        """Move a review state from the preceding image without navigating."""
+        if self.mgr.move_previous_review_state_to_current(state):
             self.refresh_current_file_display()
 
     def confirm_bulk_discard(

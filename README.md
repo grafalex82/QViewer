@@ -146,6 +146,8 @@ the image from the current file list, and advance to the next image.
 | Toggle Reject | `X` |
 | Keep and advance | `Ctrl+Up` |
 | Reject and advance | `Ctrl+Down` |
+| Move Keep from previous image to current image | `Ctrl+Shift+Up` |
+| Move Reject from previous image to current image | `Ctrl+Shift+Down` |
 | Discard current image | `Delete` |
 | Permanently delete current image | `Shift+Delete` |
 | Discard rejected images | `Ctrl+Delete` |

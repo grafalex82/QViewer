@@ -433,6 +433,28 @@ class FileMgr:
         self.set_current_review_state(UNDECIDED if state == REJECT else REJECT)
 
 
+    def move_previous_review_state_to_current(self, state):
+        """Move *state* from the preceding image to the selected image.
+
+        Return ``True`` only when the preceding image has the requested state.
+        The operation keeps the current selection unchanged.
+        """
+        if state not in (KEEP, REJECT):
+            raise ValueError(f"Unknown movable review state: {state}")
+        if self.file_index is None or self.file_index == 0:
+            return False
+
+        previous_path = os.path.join(
+            self.directory, self.directory_files[self.file_index - 1]
+        )
+        if self.get_review_state(previous_path) != state:
+            return False
+
+        self.review_states.pop(os.path.realpath(previous_path), None)
+        self.set_current_review_state(state)
+        return True
+
+
     def prev(self, allow_prev_dir = False):
         if self.file_index is None:
             return False
