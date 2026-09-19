@@ -64,6 +64,7 @@ The implemented behavior and known gaps are listed below.
   - [x] Mark images as Keep or Reject.
   - [x] Discard unwanted images into a recoverable quarantine directory.
   - [x] Discard or permanently delete the current image after confirmation.
+  - [x] Copy images marked Keep to a separate directory without modifying originals.
 
 ## Requirements
 
@@ -119,6 +120,13 @@ Rejected** moves only images marked Reject and leaves both Keep and Undecided
 images alone. **Keep Only Marked** is broader: it preserves only images marked
 Keep, moving both Reject and Undecided images.
 
+**Copy Marked Keeps** is a non-destructive export: it copies only images marked
+Keep to a directory you choose, preserving the originals and their metadata.
+The destination must be different from the currently reviewed directory; QViewer
+never overwrites a same-named destination file and reports any files it could not
+copy. This is useful for assembling a delivery or favourites folder while leaving
+the source shoot intact.
+
 Both bulk operations process only supported image files directly inside the
 current directory. They do not process images in child directories, sibling
 directories, or unsupported files.
@@ -152,6 +160,7 @@ the image from the current file list, and advance to the next image.
 | Permanently delete current image | `Shift+Delete` |
 | Discard rejected images | `Ctrl+Delete` |
 | Keep only marked images | `Ctrl+Shift+Delete` |
+| Copy images marked Keep to another directory | `Ctrl+Alt+K` |
 | Toggle full screen | `F` or `Enter` |
 | Exit full screen, then quit | `Esc` |
 | Toggle disk statistics overlay | `D` |

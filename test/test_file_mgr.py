@@ -4,6 +4,7 @@ from datetime import datetime
 import pytest
 import file_mgr
 from file_mgr import (
+    CopyResult,
     DISCARD_DIRECTORY_NAME,
     KEEP,
     REJECT,
@@ -759,3 +760,59 @@ def test_move_to_discard_never_overwrites_existing_destination(
     assert "already exists" in result.failed[0][1].lower()
     assert source.read() == "source"
     assert destination.read() == "existing"
+
+
+def test_copy_to_directory_copies_selected_images_without_changing_source(mgr, tmpdir):
+    selected = [tmpdir.join("one.jpg"), tmpdir.join("two.png")]
+    untouched = tmpdir.join("three.jpeg")
+    for path in selected + [untouched]:
+        path.write(path.basename)
+    destination = tmpdir.mkdir("picked")
+    mgr.load_file(selected[0])
+    mgr.set_current_review_state(KEEP)
+    original_selection = mgr.current_file()
+    original_files = list(mgr.directory_files)
+
+    result = mgr.copy_to_directory(selected, destination)
+
+    assert isinstance(result, CopyResult)
+    assert result.destination == os.path.realpath(destination)
+    assert result.copied == [os.path.realpath(path) for path in selected]
+    assert result.failed == []
+    assert [destination.join(path.basename).read() for path in selected] == [
+        "one.jpg",
+        "two.png",
+    ]
+    assert all(path.isfile() for path in selected + [untouched])
+    assert mgr.directory_files == original_files
+    assert mgr.current_file() == original_selection
+    assert mgr.get_current_review_state() == KEEP
+
+
+def test_copy_to_directory_rejects_current_directory_and_changes_nothing(mgr, tmpdir):
+    source = tmpdir.join("photo.jpg")
+    source.write("source")
+    mgr.load_directory(tmpdir)
+
+    result = mgr.copy_to_directory([source], tmpdir)
+
+    assert result.destination is None
+    assert result.copied == []
+    assert "different directory" in result.failed[0][1].lower()
+    assert source.read() == "source"
+
+
+def test_copy_to_directory_never_overwrites_existing_file(mgr, tmpdir):
+    source = tmpdir.join("photo.jpg")
+    source.write("source")
+    destination = tmpdir.mkdir("picked")
+    destination.join("photo.jpg").write("existing")
+    mgr.load_directory(tmpdir)
+
+    result = mgr.copy_to_directory([source], destination)
+
+    assert result.destination == os.path.realpath(destination)
+    assert result.copied == []
+    assert "already exists" in result.failed[0][1].lower()
+    assert source.read() == "source"
+    assert destination.join("photo.jpg").read() == "existing"

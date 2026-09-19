@@ -279,6 +279,14 @@ class ImageViewerMainWindow(QMainWindow):
         review_menu.addAction(self.keep_only_marked_action)
         self.addAction(self.keep_only_marked_action)
 
+        review_menu.addSeparator()
+
+        self.copy_marked_keeps_action = QAction("Copy Marked Keeps...", self)
+        self.copy_marked_keeps_action.setShortcut("Ctrl+Alt+K")
+        self.copy_marked_keeps_action.triggered.connect(self.copy_marked_keeps)
+        review_menu.addAction(self.copy_marked_keeps_action)
+        self.addAction(self.copy_marked_keeps_action)
+
     # File operations
 
     def open_file(self):
@@ -628,6 +636,63 @@ class ImageViewerMainWindow(QMainWindow):
             f"Quarantine session:\n{result.destination}",
         )
 
+    def confirm_copy_marked_keeps(self, keep_count, destination):
+        """Confirm exporting marked images without changing their originals."""
+        image_word = "image" if keep_count == 1 else "images"
+        dialog = QMessageBox(self)
+        dialog.setIcon(QMessageBox.Question)
+        dialog.setWindowTitle("Copy Marked Keeps")
+        dialog.setText(
+            f"Copy {keep_count} marked {image_word} to:\n{destination}\n\n"
+            "The original images will remain unchanged. Existing files in the "
+            "destination will not be overwritten."
+        )
+        copy_button = dialog.addButton("Copy", QMessageBox.AcceptRole)
+        cancel_button = dialog.addButton(QMessageBox.Cancel)
+        dialog.setDefaultButton(cancel_button)
+        dialog.exec_()
+        return dialog.clickedButton() is copy_button
+
+    def report_copy_failures(self, result):
+        """Show a concise report for files that could not be copied."""
+        if not result.failed:
+            return
+
+        visible_failures = result.failed[: self.MAX_REPORTED_DISCARD_FAILURES]
+        details = []
+        for source, reason in visible_failures:
+            concise_reason = str(reason).replace("\r", " ").replace("\n", " ")
+            if len(concise_reason) > self.MAX_DISCARD_ERROR_LENGTH:
+                concise_reason = (
+                    concise_reason[: self.MAX_DISCARD_ERROR_LENGTH - 3] + "..."
+                )
+            details.append(f"{os.path.basename(os.fspath(source))}: {concise_reason}")
+
+        omitted_count = len(result.failed) - len(visible_failures)
+        if omitted_count:
+            details.append(f"...and {omitted_count} more failure(s).")
+
+        copied_count = len(result.copied)
+        copied_word = "file" if copied_count == 1 else "files"
+        QMessageBox.warning(
+            self,
+            "Copy Marked Keeps - Copy Failures",
+            f"Copied {copied_count} {copied_word} successfully.\n\n"
+            "The following files could not be copied:\n\n" + "\n".join(details),
+        )
+
+    def report_copy_success(self, result):
+        """Report a successful non-destructive export."""
+        copied_count = len(result.copied)
+        copied_word = "file" if copied_count == 1 else "files"
+        QMessageBox.information(
+            self,
+            "Copy Marked Keeps - Complete",
+            f"Copied {copied_count} {copied_word}.\n\n"
+            f"Destination:\n{result.destination}\n\n"
+            "Original images were left unchanged.",
+        )
+
     def run_bulk_discard(
         self,
         operation_name,
@@ -715,6 +780,35 @@ class ImageViewerMainWindow(QMainWindow):
             self.mgr.current_not_kept_files(),
             "There is nothing to discard.",
         )
+
+    def copy_marked_keeps(self):
+        """Copy images marked Keep to a user-selected directory."""
+        candidates = self.mgr.current_files_with_states({KEEP})
+        if not candidates:
+            QMessageBox.information(
+                self,
+                "Copy Marked Keeps",
+                "Nothing in the current directory is marked Keep.",
+            )
+            return None
+
+        destination = QFileDialog.getExistingDirectory(
+            self,
+            "Copy Marked Keeps To",
+            self.mgr.current_directory() or "",
+        )
+        if not destination:
+            return None
+
+        if not self.confirm_copy_marked_keeps(len(candidates), destination):
+            return None
+
+        result = self.mgr.copy_to_directory(candidates, destination)
+        if result.failed:
+            self.report_copy_failures(result)
+        else:
+            self.report_copy_success(result)
+        return result
 
     def toggle_full_screen(self):
         if self.isFullScreen():

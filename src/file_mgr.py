@@ -22,6 +22,19 @@ class DiscardResult:
     failed: list[tuple[str, str]] = field(default_factory=list)
 
 
+@dataclass
+class CopyResult:
+    """Result of copying files into an export directory.
+
+    ``copied`` contains the original source paths. The source directory and
+    its review state are deliberately left untouched.
+    """
+
+    destination: str | None = None
+    copied: list[str] = field(default_factory=list)
+    failed: list[tuple[str, str]] = field(default_factory=list)
+
+
 @dataclass(frozen=True)
 class DiskStats:
     """Disk and review-size statistics for the currently loaded directory."""
@@ -371,6 +384,87 @@ class FileMgr:
             self.file_index = 0
         else:
             self.file_index = min(old_index, len(self.directory_files) - 1)
+
+        return result
+
+
+    def copy_to_directory(self, file_paths, destination_directory):
+        """Copy managed current-directory images to *destination_directory*.
+
+        Existing destination files are never overwritten. The method is kept
+        separate from the discard operation: it neither refreshes the source
+        listing nor changes selection or review states, because every source
+        image remains in place.
+        """
+        result = CopyResult()
+        if not file_paths or self.directory is None:
+            return result
+
+        try:
+            destination = os.path.realpath(os.fspath(destination_directory))
+        except TypeError as error:
+            result.failed.extend((str(path), str(error)) for path in file_paths)
+            return result
+
+        if not os.path.isdir(destination):
+            result.failed.extend(
+                (os.fspath(path), "Destination is not an existing directory")
+                for path in file_paths
+            )
+            return result
+
+        directory = os.path.realpath(self.directory)
+        if os.path.normcase(destination) == os.path.normcase(directory):
+            result.failed.extend(
+                (os.fspath(path), "Destination must be a different directory")
+                for path in file_paths
+            )
+            return result
+
+        result.destination = destination
+        managed_files = set(self.directory_files)
+        candidates = []
+        seen_sources = set()
+        for supplied_path in file_paths:
+            try:
+                source = os.path.realpath(os.fspath(supplied_path))
+            except TypeError as error:
+                result.failed.append((str(supplied_path), str(error)))
+                continue
+
+            if source in seen_sources:
+                result.failed.append((source, "Source image was supplied more than once"))
+            elif os.path.isdir(source):
+                result.failed.append((source, "Path is a directory, not an image file"))
+            elif os.path.normcase(os.path.dirname(source)) != os.path.normcase(directory):
+                result.failed.append((source, "Path is outside the current directory"))
+            elif (
+                os.path.basename(source) not in managed_files
+                or not self.is_supported_image(source)
+                or not os.path.isfile(source)
+            ):
+                result.failed.append((source, "Path is not a managed current-directory image"))
+            else:
+                seen_sources.add(source)
+                candidates.append(source)
+
+        destinations = set()
+        copies = []
+        for source in candidates:
+            target = os.path.join(destination, os.path.basename(source))
+            normalized_target = os.path.normcase(os.path.realpath(target))
+            if os.path.exists(target) or normalized_target in destinations:
+                result.failed.append((source, "Destination file already exists"))
+            else:
+                destinations.add(normalized_target)
+                copies.append((source, target))
+
+        for source, target in copies:
+            try:
+                shutil.copy2(source, target)
+                result.copied.append(source)
+            except OSError as error:
+                result.failed.append((source, str(error)))
 
         return result
 
