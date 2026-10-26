@@ -1,6 +1,8 @@
 import pytest
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QEvent, Qt
+from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtTest import QTest
 
 from file_mgr import KEEP, REJECT, UNDECIDED
@@ -98,7 +100,7 @@ def test_set_state_and_next_shortcuts_replace_state_then_advance(
         loaded_window.show_full_screen()
         app.processEvents()
 
-    QTest.keyClick(loaded_window, key, Qt.ControlModifier)
+    QTest.keyClick(loaded_window, key)
     app.processEvents()
 
     assert loaded_window.mgr.get_review_state(reviewed_file) == requested_state
@@ -116,7 +118,7 @@ def test_set_state_and_next_shortcuts_set_state_at_last_image_without_moving(
     loaded_window.mgr.last()
     last_file = loaded_window.mgr.current_file()
 
-    QTest.keyClick(loaded_window, key, Qt.ControlModifier)
+    QTest.keyClick(loaded_window, key)
     app.processEvents()
 
     assert loaded_window.mgr.current_file() == last_file
@@ -143,7 +145,7 @@ def test_move_previous_review_state_shortcuts_transfer_state_without_navigating(
         loaded_window.show_full_screen()
         app.processEvents()
 
-    QTest.keyClick(loaded_window, key, Qt.ControlModifier | Qt.ShiftModifier)
+    QTest.keyClick(loaded_window, key, Qt.ShiftModifier)
     app.processEvents()
 
     assert loaded_window.mgr.current_file() == current_file
@@ -165,7 +167,7 @@ def test_move_previous_review_state_shortcuts_require_matching_previous_state(
     current_file = loaded_window.mgr.current_file()
     loaded_window.mgr.set_current_review_state(UNDECIDED)
 
-    QTest.keyClick(loaded_window, key, Qt.ControlModifier | Qt.ShiftModifier)
+    QTest.keyClick(loaded_window, key, Qt.ShiftModifier)
     app.processEvents()
 
     assert loaded_window.mgr.current_file() == current_file
@@ -179,7 +181,7 @@ def test_move_previous_review_state_shortcuts_are_safe_at_first_image(
 ):
     current_file = loaded_window.mgr.current_file()
 
-    QTest.keyClick(loaded_window, key, Qt.ControlModifier | Qt.ShiftModifier)
+    QTest.keyClick(loaded_window, key, Qt.ShiftModifier)
     app.processEvents()
 
     assert loaded_window.mgr.current_file() == current_file
@@ -188,7 +190,7 @@ def test_move_previous_review_state_shortcuts_are_safe_at_first_image(
 
 @pytest.mark.parametrize("key", (Qt.Key_Up, Qt.Key_Down))
 @pytest.mark.parametrize("full_screen", (False, True))
-def test_plain_vertical_arrows_do_not_set_state_or_advance(
+def test_old_ctrl_vertical_arrows_do_not_set_state_or_advance(
     loaded_window, app, key, full_screen
 ):
     initial_file = loaded_window.mgr.current_file()
@@ -197,7 +199,7 @@ def test_plain_vertical_arrows_do_not_set_state_or_advance(
         loaded_window.show_full_screen()
         app.processEvents()
 
-    QTest.keyClick(loaded_window, key)
+    QTest.keyClick(loaded_window, key, Qt.ControlModifier)
     app.processEvents()
 
     assert loaded_window.mgr.current_file() == initial_file
@@ -210,8 +212,44 @@ def test_set_state_and_next_shortcuts_are_safe_without_a_loaded_file(
 ):
     assert window.mgr.current_file() is None
 
-    QTest.keyClick(window, key, Qt.ControlModifier)
+    QTest.keyClick(window, key)
     app.processEvents()
 
     assert window.mgr.current_file() is None
     assert window.mgr.get_current_review_state() == UNDECIDED
+
+
+@pytest.mark.parametrize("key", (Qt.Key_Up, Qt.Key_Down))
+@pytest.mark.parametrize("full_screen", (False, True))
+def test_held_review_arrow_does_not_mark_additional_images(
+    loaded_window, app, key, full_screen
+):
+    if full_screen:
+        loaded_window.show_full_screen()
+    loaded_window.image_view.setFocus()
+    app.processEvents()
+    first_file = loaded_window.mgr.current_file()
+
+    QTest.keyClick(loaded_window.image_view, key)
+    app.processEvents()
+    second_file = loaded_window.mgr.current_file()
+    for _ in range(3):
+        QApplication.sendEvent(
+            loaded_window.image_view,
+            QKeyEvent(QEvent.KeyPress, key, Qt.NoModifier, "", True),
+        )
+    app.processEvents()
+
+    assert loaded_window.mgr.file_index == 1
+    assert loaded_window.mgr.get_review_state(first_file) == (
+        KEEP if key == Qt.Key_Up else REJECT
+    )
+    assert loaded_window.mgr.get_review_state(second_file) == UNDECIDED
+
+    QTest.keyClick(loaded_window.image_view, key)
+    app.processEvents()
+
+    assert loaded_window.mgr.file_index == 2
+    assert loaded_window.mgr.get_review_state(second_file) == (
+        KEEP if key == Qt.Key_Up else REJECT
+    )

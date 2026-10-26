@@ -571,6 +571,19 @@ class FileMgr:
         return False
 
 
+    def jump(self, offset):
+        """Move by *offset* images, clamping to the current directory's ends."""
+        if self.file_index is None:
+            return False
+
+        target_index = max(0, min(self.file_index + offset, len(self.directory_files) - 1))
+        if target_index == self.file_index:
+            return False
+
+        self.file_index = target_index
+        return True
+
+
     def prev_keep(self):
         """Select the nearest earlier image marked Keep."""
         if self.file_index is None:

@@ -160,6 +160,53 @@ def test_file_position_updates_during_navigation(mgr, testdir):
     assert mgr.current_file_position() == (1, 3)
 
 
+@pytest.mark.parametrize(
+    ("start", "offset", "expected", "changed"),
+    (
+        (0, 5, 5, True),
+        (9, -5, 4, True),
+        (7, 5, 9, True),
+        (2, -5, 0, True),
+        (9, 5, 9, False),
+        (0, -5, 0, False),
+        (4, 0, 4, False),
+    ),
+)
+def test_jump_selects_relative_image_and_clamps_at_directory_ends(
+    mgr, tmpdir, start, offset, expected, changed
+):
+    for index in range(10):
+        tmpdir.join(f"image-{index:02}.jpg").write("")
+    mgr.load_file(str(tmpdir.join(f"image-{start:02}.jpg")))
+
+    assert mgr.jump(offset) is changed
+
+    assert mgr.current_file() == str(tmpdir.join(f"image-{expected:02}.jpg"))
+    assert mgr.current_file_position() == (expected + 1, 10)
+
+
+@pytest.mark.parametrize("offset", (-5, 5))
+@pytest.mark.parametrize("loaded", (False, True))
+def test_jump_does_nothing_without_images(mgr, tmpdir, offset, loaded):
+    if loaded:
+        mgr.load_directory(str(tmpdir))
+
+    assert not mgr.jump(offset)
+
+    assert mgr.current_file() is None
+
+
+@pytest.mark.parametrize("offset", (-5, 5))
+def test_jump_does_nothing_in_single_image_directory(mgr, tmpdir, offset):
+    image = tmpdir.join("only.jpg")
+    image.write("")
+    mgr.load_file(str(image))
+
+    assert not mgr.jump(offset)
+
+    assert mgr.current_file() == str(image)
+
+
 def test_next(mgr, testdir):
     mgr.load_file(testdir.join("test1.jpg"))
     assert mgr.next()

@@ -88,6 +88,18 @@ class ImageViewerMainWindow(QMainWindow):
         view_menu.addAction(next_action)
         self.addAction(next_action)
 
+        jump_back_action = QAction("Previous 5 Images", self)
+        jump_back_action.setShortcut("PgUp")
+        jump_back_action.triggered.connect(lambda: self.jump_images(-5))
+        view_menu.addAction(jump_back_action)
+        self.addAction(jump_back_action)
+
+        jump_forward_action = QAction("Next 5 Images", self)
+        jump_forward_action.setShortcut("PgDown")
+        jump_forward_action.triggered.connect(lambda: self.jump_images(5))
+        view_menu.addAction(jump_forward_action)
+        self.addAction(jump_forward_action)
+
         prev_keep_action = QAction("Previous Keep Image", self)
         prev_keep_action.setShortcut("Shift+Left")
         prev_keep_action.triggered.connect(self.prev_keep_image)
@@ -125,13 +137,13 @@ class ImageViewerMainWindow(QMainWindow):
         self.addAction(last_action)
 
         prev_dir_action = QAction("Previous Directory", self)
-        prev_dir_action.setShortcut("Ctrl+Left")
+        prev_dir_action.setShortcut("Ctrl+PgUp")
         prev_dir_action.triggered.connect(self.prev_dir)
         view_menu.addAction(prev_dir_action)
         self.addAction(prev_dir_action)
 
         next_dir_action = QAction("Next Directory", self)
-        next_dir_action.setShortcut("Ctrl+Right")
+        next_dir_action.setShortcut("Ctrl+PgDown")
         next_dir_action.triggered.connect(self.next_dir)
         view_menu.addAction(next_dir_action)
         self.addAction(next_dir_action)
@@ -218,7 +230,8 @@ class ImageViewerMainWindow(QMainWindow):
         review_menu.addSeparator()
 
         self.keep_and_next_action = QAction("Keep and Next", self)
-        self.keep_and_next_action.setShortcut("Ctrl+Up")
+        self.keep_and_next_action.setShortcut("Up")
+        self.keep_and_next_action.setAutoRepeat(False)
         self.keep_and_next_action.triggered.connect(
             lambda: self.set_review_state_and_next(KEEP)
         )
@@ -226,7 +239,8 @@ class ImageViewerMainWindow(QMainWindow):
         self.addAction(self.keep_and_next_action)
 
         self.reject_and_next_action = QAction("Reject and Next", self)
-        self.reject_and_next_action.setShortcut("Ctrl+Down")
+        self.reject_and_next_action.setShortcut("Down")
+        self.reject_and_next_action.setAutoRepeat(False)
         self.reject_and_next_action.triggered.connect(
             lambda: self.set_review_state_and_next(REJECT)
         )
@@ -234,7 +248,7 @@ class ImageViewerMainWindow(QMainWindow):
         self.addAction(self.reject_and_next_action)
 
         self.move_previous_keep_action = QAction("Move Previous Keep to Current", self)
-        self.move_previous_keep_action.setShortcut("Ctrl+Shift+Up")
+        self.move_previous_keep_action.setShortcut("Shift+Up")
         self.move_previous_keep_action.triggered.connect(
             lambda: self.move_previous_review_state_to_current(KEEP)
         )
@@ -244,7 +258,7 @@ class ImageViewerMainWindow(QMainWindow):
         self.move_previous_reject_action = QAction(
             "Move Previous Reject to Current", self
         )
-        self.move_previous_reject_action.setShortcut("Ctrl+Shift+Down")
+        self.move_previous_reject_action.setShortcut("Shift+Down")
         self.move_previous_reject_action.triggered.connect(
             lambda: self.move_previous_review_state_to_current(REJECT)
         )
@@ -452,6 +466,10 @@ class ImageViewerMainWindow(QMainWindow):
 
     def next_image(self):
         if self.mgr.next():
+            self.load_image(self.mgr.current_file())
+
+    def jump_images(self, offset):
+        if self.mgr.jump(offset):
             self.load_image(self.mgr.current_file())
 
     def prev_keep_image(self):

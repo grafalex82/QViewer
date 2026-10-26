@@ -146,16 +146,17 @@ the image from the current file list, and advance to the next image.
 | Open image | `Ctrl+O` |
 | Quit | `Ctrl+Q` |
 | Previous / next image | `Left` / `Right` or `Space` |
+| Back / forward 5 images in the current folder | `PageUp` / `PageDown` |
 | Previous / next image marked Keep | `Shift+Left` / `Shift+Right` |
 | First / last image marked Keep | `Shift+Home` / `Shift+End` |
 | First / last image | `Home` / `End` |
-| Previous / next sibling folder | `Ctrl+Left` / `Ctrl+Right` |
+| Previous / next sibling folder | `Ctrl+PageUp` / `Ctrl+PageDown` |
 | Toggle Keep | `K` |
 | Toggle Reject | `X` |
-| Keep and advance | `Ctrl+Up` |
-| Reject and advance | `Ctrl+Down` |
-| Move Keep from previous image to current image | `Ctrl+Shift+Up` |
-| Move Reject from previous image to current image | `Ctrl+Shift+Down` |
+| Keep and advance | `Up` |
+| Reject and advance | `Down` |
+| Move Keep from previous image to current image | `Shift+Up` |
+| Move Reject from previous image to current image | `Shift+Down` |
 | Discard current image | `Delete` |
 | Permanently delete current image | `Shift+Delete` |
 | Discard rejected images | `Ctrl+Delete` |
@@ -167,6 +168,12 @@ the image from the current file list, and advance to the next image.
 | Toggle image statistics overlay | `I` |
 | Zoom in / out | `+` / `-` |
 | Rotate view left / right 90° | `L` / `R` |
+
+Five-image jumps stop at the first or last image and never leave the current
+folder. `Up` and `Down` set the requested review state and advance; they do not
+toggle an existing mark off. At the last image they set the mark without moving.
+Holding either key does not repeatedly mark images. `K` and `X` still toggle
+marks without advancing. The old `Ctrl+Arrow` shortcuts are no longer assigned.
 
 Use the **View** menu to select fit-to-window or original-size display. To try
 lasso zoom, drag a rectangle over the displayed image and click inside that

@@ -20,13 +20,14 @@ def exercise_navigation_shortcuts(window, app):
         ("last_keep", Qt.Key_End, Qt.ShiftModifier),
         ("first", Qt.Key_Home, Qt.NoModifier),
         ("last", Qt.Key_End, Qt.NoModifier),
-        ("prev_dir", Qt.Key_Left, Qt.ControlModifier),
-        ("next_dir", Qt.Key_Right, Qt.ControlModifier),
+        ("prev_dir", Qt.Key_PageUp, Qt.ControlModifier),
+        ("next_dir", Qt.Key_PageDown, Qt.ControlModifier),
     )
 
     method_names = {method_name for method_name, _, _ in shortcuts}
     for method_name in method_names:
         setattr(window.mgr, method_name, Mock(return_value=False))
+    window.mgr.jump = Mock(return_value=False)
 
     for _, key, modifier in shortcuts:
         QTest.keyClick(window, key, modifier)
@@ -38,6 +39,86 @@ def exercise_navigation_shortcuts(window, app):
             for shortcut_method, _, _ in shortcuts
         )
         assert getattr(window.mgr, method_name).call_count == expected_calls
+    window.mgr.jump.assert_not_called()
+
+
+@pytest.mark.parametrize("full_screen", (False, True))
+@pytest.mark.parametrize(
+    ("key", "start", "expected"),
+    (
+        (Qt.Key_PageDown, 0, 5),
+        (Qt.Key_PageDown, 7, 9),
+        (Qt.Key_PageDown, 9, 9),
+        (Qt.Key_PageUp, 9, 4),
+        (Qt.Key_PageUp, 2, 0),
+        (Qt.Key_PageUp, 0, 0),
+    ),
+)
+def test_five_image_jumps_stay_in_current_directory(
+    window, app, tmpdir, full_screen, key, start, expected
+):
+    for directory_name in ("album-a", "album-b", "album-c"):
+        directory = tmpdir.mkdir(directory_name)
+        for index in range(10):
+            directory.join(f"image-{index:02}.jpg").write("")
+    current_directory = str(tmpdir.join("album-b"))
+    window.mgr.load_file(os.path.join(current_directory, f"image-{start:02}.jpg"))
+    window.mgr.set_current_review_state(KEEP)
+    review_states = window.mgr.review_states.copy()
+    window.load_image = Mock()
+    if full_screen:
+        window.show_full_screen()
+    window.image_view.setFocus()
+    app.processEvents()
+
+    QTest.keyClick(window.image_view, key)
+    app.processEvents()
+
+    assert window.mgr.current_directory() == current_directory
+    assert window.mgr.current_file_position() == (expected + 1, 10)
+    assert window.mgr.review_states == review_states
+    if start == expected:
+        window.load_image.assert_not_called()
+    else:
+        window.load_image.assert_called_once_with(
+            os.path.join(current_directory, f"image-{expected:02}.jpg")
+        )
+
+
+@pytest.mark.parametrize("key", (Qt.Key_PageUp, Qt.Key_PageDown))
+@pytest.mark.parametrize("empty_directory", (False, True))
+def test_five_image_jumps_are_safe_without_images(
+    window, app, tmpdir, key, empty_directory
+):
+    if empty_directory:
+        window.mgr.load_directory(str(tmpdir))
+    window.load_image = Mock()
+
+    QTest.keyClick(window, key)
+    app.processEvents()
+
+    assert window.mgr.current_file() is None
+    window.load_image.assert_not_called()
+
+
+@pytest.mark.parametrize("key", (Qt.Key_Left, Qt.Key_Right))
+@pytest.mark.parametrize("full_screen", (False, True))
+def test_old_ctrl_horizontal_arrows_do_not_navigate(window, app, key, full_screen):
+    window.mgr.prev = Mock(return_value=False)
+    window.mgr.next = Mock(return_value=False)
+    window.mgr.prev_dir = Mock(return_value=False)
+    window.mgr.next_dir = Mock(return_value=False)
+    if full_screen:
+        window.show_full_screen()
+        app.processEvents()
+
+    QTest.keyClick(window, key, Qt.ControlModifier)
+    app.processEvents()
+
+    window.mgr.prev.assert_not_called()
+    window.mgr.next.assert_not_called()
+    window.mgr.prev_dir.assert_not_called()
+    window.mgr.next_dir.assert_not_called()
 
 
 def test_navigation_shortcuts_work_in_windowed_mode(window, app):
